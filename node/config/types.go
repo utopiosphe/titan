@@ -23,8 +23,17 @@ type Bandwidth struct {
 	BandwidthMB int64
 	// upload file bandwidth, unit is MB/s
 	BandwidthUp int64
-	// download file bandwidth, unit is <B/s
+	// download file bandwidth, unit is MB/s
 	BandwidthDown int64
+}
+
+type Netflow struct {
+	// TODO: upload and download flow total, unit is B
+	Total int64
+	// upload network flow limit, unit is B
+	NetflowUp int64
+	// download network flow limit, unit is B
+	NetflowDown int64
 }
 
 type Memory struct {
@@ -74,6 +83,7 @@ type EdgeCfg struct {
 	Puller Puller
 
 	Bandwidth Bandwidth
+	Netflow   Netflow
 	Storage   Storage
 	Memory    Memory
 	CPU       CPU

@@ -43,6 +43,8 @@ type Resources struct {
 	Storage *config.Storage
 	// Bandwidth Limit bandwidth usage
 	Bandwidth *config.Bandwidth
+	// Netflow Limit network-flow usage
+	Netflow *config.Netflow
 }
 
 // Storage represents a storage system and its properties.
@@ -98,6 +100,12 @@ func (device *Device) GetNodeInfo(ctx context.Context) (types.NodeInfo, error) {
 
 	if device.resources.Storage != nil {
 		info.AvailableDiskSpace = float64(device.resources.Storage.StorageGB) * StorageUnit
+	}
+
+	if device.resources.Netflow != nil {
+		info.NetflowTotal = device.resources.Netflow.Total
+		info.NetflowUp = device.resources.Netflow.NetflowUp
+		info.NetflowDown = device.resources.Netflow.NetflowDown
 	}
 
 	// mac, err := getMacAddr(info.InternalIP)

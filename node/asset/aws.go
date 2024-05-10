@@ -252,7 +252,7 @@ func (ac *awsClient) downloadObject(ctx context.Context, svc *s3.S3, bucket, key
 		Key:    aws.String(key),
 	})
 	if err != nil {
-		fmt.Println("get object error %s", err.Error())
+		fmt.Printf("get object error %s", err.Error())
 		return err
 	}
 	defer result.Body.Close()

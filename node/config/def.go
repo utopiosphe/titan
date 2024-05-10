@@ -59,6 +59,14 @@ func DefaultEdgeCfg() *EdgeCfg {
 			// 1G/s
 			BandwidthDown: 1024,
 		},
+		Netflow: Netflow{
+			// 100GB
+			Total: 100 << 30,
+			// 50GB
+			NetflowUp: 50 << 30,
+			// 50GB
+			NetflowDown: 50 << 30,
+		},
 		CPU: CPU{
 			Cores: 1,
 		},

@@ -269,7 +269,7 @@ type NodeAPIStruct struct {
 
 		EdgeConnect func(p0 context.Context, p1 *types.ConnectOptions) error `perm:"edge"`
 
-		FreeUpDiskSpace func(p0 context.Context, p1 string, p2 int64) (error) `perm:"edge,candidate,web,locator"`
+		FreeUpDiskSpace func(p0 context.Context, p1 string, p2 int64) error `perm:"edge,candidate,web,locator"`
 
 		GetAssetSourceDownloadInfo func(p0 context.Context, p1 string) (*types.AssetSourceDownloadInfoRsp, error) `perm:"edge,candidate,web,locator"`
 
@@ -328,6 +328,8 @@ type NodeAPIStruct struct {
 		UndoNodeDeactivation func(p0 context.Context, p1 string) error `perm:"web,admin"`
 
 		UpdateBandwidths func(p0 context.Context, p1 int64, p2 int64) error `perm:"edge,candidate"`
+
+		UpdateNetflows func(p0 context.Context, p1 int64, p2 int64, p3 int64) error `perm:"edge"`
 
 		UpdateNodePort func(p0 context.Context, p1 string, p2 string) error `perm:"web,admin"`
 
@@ -1291,14 +1293,14 @@ func (s *NodeAPIStub) EdgeConnect(p0 context.Context, p1 *types.ConnectOptions) 
 	return ErrNotSupported
 }
 
-func (s *NodeAPIStruct) FreeUpDiskSpace(p0 context.Context, p1 string, p2 int64) (error) {
+func (s *NodeAPIStruct) FreeUpDiskSpace(p0 context.Context, p1 string, p2 int64) error {
 	if s.Internal.FreeUpDiskSpace == nil {
 		return ErrNotSupported
 	}
 	return s.Internal.FreeUpDiskSpace(p0, p1, p2)
 }
 
-func (s *NodeAPIStub) FreeUpDiskSpace(p0 context.Context, p1 string, p2 int64) (error) {
+func (s *NodeAPIStub) FreeUpDiskSpace(p0 context.Context, p1 string, p2 int64) error {
 	return ErrNotSupported
 }
 
@@ -1618,6 +1620,17 @@ func (s *NodeAPIStruct) UpdateBandwidths(p0 context.Context, p1 int64, p2 int64)
 }
 
 func (s *NodeAPIStub) UpdateBandwidths(p0 context.Context, p1 int64, p2 int64) error {
+	return ErrNotSupported
+}
+
+func (s *NodeAPIStruct) UpdateNetflows(p0 context.Context, p1 int64, p2 int64, p3 int64) error {
+	if s.Internal.UpdateNetflows == nil {
+		return ErrNotSupported
+	}
+	return s.Internal.UpdateNetflows(p0, p1, p2, p3)
+}
+
+func (s *NodeAPIStub) UpdateNetflows(p0 context.Context, p1 int64, p2 int64, p3 int64) error {
 	return ErrNotSupported
 }
 

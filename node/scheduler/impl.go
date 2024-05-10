@@ -487,3 +487,8 @@ func (s *Scheduler) ElectValidators(ctx context.Context, nodeIDs []string, clean
 func (s *Scheduler) AddProfits(ctx context.Context, nodes []string, profit float64) error {
 	return s.db.UpdateNodeProfit(nodes, profit)
 }
+
+// UpdateNetflows update node netflow tatal,up,down usage
+func (s *Scheduler) UpdateNetflows(ctx context.Context, total, up, down int64) error {
+	return nil
+}

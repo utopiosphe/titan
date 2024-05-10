@@ -126,6 +126,8 @@ type NodeAPI interface {
 	VerifyTokenWithLimitCount(ctx context.Context, token string) (*types.JWTPayload, error) //perm:edge,candidate
 	// UpdateBandwidths update node bandwidthDown and bandwidthUp
 	UpdateBandwidths(ctx context.Context, bandwidthDown, bandwidthUp int64) error //perm:edge,candidate
+	// UpdateNetflows update node netflow tatal,up,down usage
+	UpdateNetflows(ctx context.Context, total, up, down int64) error //perm:edge
 	// GetCandidateNodeIP get candidate ip for locator
 	GetCandidateNodeIP(ctx context.Context, nodeID string) (string, error) //perm:web,admin
 	// GetMinioConfigFromCandidate get minio config from candidate

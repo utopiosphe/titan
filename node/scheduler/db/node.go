@@ -872,6 +872,8 @@ func (n *SQLDB) UpdateNodeProfit(sIDs []string, profit float64) error {
 	return err
 }
 
+// func(n *SQLDB) 
+
 // CleanData delete events
 func (n *SQLDB) CleanData() error {
 	query := fmt.Sprintf(`DELETE FROM %s WHERE end_time<DATE_SUB(NOW(), INTERVAL 5 DAY) `, replicaEventTable)
