@@ -265,12 +265,12 @@ func (u *User) DeleteAsset(ctx context.Context, cid string) error {
 func (u *User) ShareAssets(ctx context.Context, assetCIDs []string, schedulerAPI api.Scheduler, nodeManager *node.Manager) (map[string]string, error) {
 	urls := make(map[string]string)
 	for _, assetCID := range assetCIDs {
-		downloadInfos, err := schedulerAPI.GetCandidateDownloadInfos(ctx, assetCID)
+		rsp, err := schedulerAPI.GetAssetSourceDownloadInfo(ctx, assetCID)
 		if err != nil {
 			return nil, err
 		}
 
-		if len(downloadInfos) == 0 {
+		if len(rsp.SourceList) == 0 {
 			return nil, fmt.Errorf("asset %s not exist", assetCID)
 		}
 
@@ -289,7 +289,7 @@ func (u *User) ShareAssets(ctx context.Context, assetCIDs []string, schedulerAPI
 		}
 
 		var node *node.Node
-		for _, info := range downloadInfos {
+		for _, info := range rsp.SourceList {
 			n := nodeManager.GetCandidateNode(info.NodeID)
 			if n != nil {
 				node = n
@@ -297,7 +297,7 @@ func (u *User) ShareAssets(ctx context.Context, assetCIDs []string, schedulerAPI
 			}
 		}
 
-		url := fmt.Sprintf("http://%s/ipfs/%s?token=%s&filename=%s", downloadInfos[0].Address, assetCID, tk, assetName)
+		url := fmt.Sprintf("http://%s/ipfs/%s?token=%s&filename=%s", rsp.SourceList[0].Address, assetCID, tk, assetName)
 		if node != nil && len(node.ExternalURL) > 0 {
 			url = fmt.Sprintf("%s/ipfs/%s?token=%s&filename=%s", node.ExternalURL, assetCID, tk, assetName)
 		}

@@ -102,8 +102,8 @@ func InitTables(d *SQLDB, serverID dtypes.ServerID) error {
 	tx.MustExec(fmt.Sprintf(cAWSDataTable, awsDataTable))
 	tx.MustExec(fmt.Sprintf(cProfitDetailsTable, profitDetailsTable))
 
-	// tx.MustExec(fmt.Sprintf("ALTER TABLE %s ADD netflow_up  BIGINT  DEFAULT 0;", nodeInfoTable))
-	// tx.MustExec(fmt.Sprintf("ALTER TABLE %s ADD netflow_down  BIGINT  DEFAULT 0;", nodeInfoTable))
+	tx.MustExec(fmt.Sprintf("ALTER TABLE %s ADD netflow_up  BIGINT  DEFAULT 0;", nodeInfoTable))
+	tx.MustExec(fmt.Sprintf("ALTER TABLE %s ADD netflow_down  BIGINT  DEFAULT 0;", nodeInfoTable))
 
 	return tx.Commit()
 }

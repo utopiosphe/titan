@@ -634,9 +634,6 @@ func (s *Scheduler) GetAssetSourceDownloadInfo(ctx context.Context, cid string) 
 		return nil, xerrors.Errorf("GetAssetSourceDownloadInfo %s cid to hash err:%s", cid, err.Error())
 	}
 
-	titanRsa := titanrsa.New(crypto.SHA256, crypto.SHA256.New())
-	sources := make([]*types.SourceDownloadInfo, 0)
-
 	replicas, err := s.db.LoadReplicasByStatus(hash, []types.ReplicaStatus{types.ReplicaStatusSucceeded})
 	if err != nil {
 		return nil, err
@@ -647,12 +644,12 @@ func (s *Scheduler) GetAssetSourceDownloadInfo(ctx context.Context, cid string) 
 		return nil, err
 	}
 
-	bucket := ""
 	if aInfo.Source == int64(types.AssetSourceAWS) {
-		bucket = aInfo.Note
-
-		out.AWSBucket = bucket
+		out.AWSBucket = aInfo.Note
 	}
+
+	titanRsa := titanrsa.New(crypto.SHA256, crypto.SHA256.New())
+	sources := make([]*types.SourceDownloadInfo, 0)
 
 	limit := 5
 	for _, rInfo := range replicas {
@@ -698,6 +695,7 @@ func (s *Scheduler) GetAssetSourceDownloadInfo(ctx context.Context, cid string) 
 
 	out.SourceList = sources
 
+	// init workload
 	if len(sources) > 0 {
 		out.WorkloadID = uuid.NewString()
 
