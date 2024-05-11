@@ -28,8 +28,6 @@ type Bandwidth struct {
 }
 
 type Netflow struct {
-	// TODO: upload and download flow total, unit is B
-	// Total int64
 	// upload network flow limit, unit is B
 	NetflowUp int64
 	// download network flow limit, unit is B
