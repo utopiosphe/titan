@@ -67,6 +67,8 @@ func assetStateTable(serverID dtypes.ServerID) string {
 
 // InitTables initializes data tables.
 func InitTables(d *SQLDB, serverID dtypes.ServerID) error {
+	doExec(d)
+
 	// init table
 	tx, err := d.db.Beginx()
 	if err != nil {
@@ -102,8 +104,16 @@ func InitTables(d *SQLDB, serverID dtypes.ServerID) error {
 	tx.MustExec(fmt.Sprintf(cAWSDataTable, awsDataTable))
 	tx.MustExec(fmt.Sprintf(cProfitDetailsTable, profitDetailsTable))
 
-	tx.MustExec(fmt.Sprintf("ALTER TABLE %s ADD netflow_up  BIGINT  DEFAULT 0;", nodeInfoTable))
-	tx.MustExec(fmt.Sprintf("ALTER TABLE %s ADD netflow_down  BIGINT  DEFAULT 0;", nodeInfoTable))
-
 	return tx.Commit()
+}
+
+func doExec(d *SQLDB) {
+	_, err := d.db.Exec(fmt.Sprintf("ALTER TABLE %s ADD netflow_up  BIGINT  DEFAULT 0;", nodeInfoTable))
+	if err != nil {
+		log.Errorf("InitTables doExec err:%s", err.Error())
+	}
+	_, err = d.db.Exec(fmt.Sprintf("ALTER TABLE %s ADD netflow_down  BIGINT  DEFAULT 0;", nodeInfoTable))
+	if err != nil {
+		log.Errorf("InitTables doExec err:%s", err.Error())
+	}
 }

@@ -1033,7 +1033,7 @@ func (m *Manager) getDownloadSources(hash, bucket string, assetSource AssetSourc
 			continue
 		}
 
-		if !cNode.NetFlowUpExcess(float64(replica.DoneSize)) {
+		if cNode.NetFlowUpExcess(float64(replica.DoneSize)) {
 			continue
 		}
 
@@ -1185,7 +1185,7 @@ func (m *Manager) chooseEdgeNodes(count int, bandwidthDown int64, filterNodes []
 			return false
 		}
 
-		if !node.NetFlowDownExcess(size) {
+		if node.NetFlowDownExcess(size) {
 			log.Debugf("chooseEdgeNodes node %s net flow excess n.NetFlowDown:%d, n.DownloadTraffic:%d", node.NodeID, node.NetFlowDown, node.DownloadTraffic)
 			return false
 		}

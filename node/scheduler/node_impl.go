@@ -475,7 +475,7 @@ func (s *Scheduler) GetEdgeDownloadInfos(ctx context.Context, cid string) (*type
 			continue
 		}
 
-		if !eNode.NetFlowUpExcess(float64(rInfo.DoneSize)) {
+		if eNode.NetFlowUpExcess(float64(rInfo.DoneSize)) {
 			continue
 		}
 
@@ -659,7 +659,7 @@ func (s *Scheduler) GetAssetSourceDownloadInfo(ctx context.Context, cid string) 
 			continue
 		}
 
-		if !cNode.NetFlowUpExcess(float64(rInfo.DoneSize)) {
+		if cNode.NetFlowUpExcess(float64(rInfo.DoneSize)) {
 			continue
 		}
 
@@ -784,7 +784,7 @@ func (s *Scheduler) GetCandidateDownloadInfos(ctx context.Context, cid string) (
 			continue
 		}
 
-		if !cNode.NetFlowUpExcess(float64(rInfo.DoneSize)) {
+		if cNode.NetFlowUpExcess(float64(rInfo.DoneSize)) {
 			continue
 		}
 
