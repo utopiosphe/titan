@@ -316,8 +316,8 @@ func (m *Manager) getCurBandwidthUp(nodes []string) int64 {
 		}
 	}
 
-	// B to MiB
-	v := int64(math.Ceil(float64(bandwidthUp) / float64(units.MiB)))
+	// B to KiB
+	v := int64(math.Ceil(float64(bandwidthUp) / float64(units.KiB)))
 	return v
 }
 

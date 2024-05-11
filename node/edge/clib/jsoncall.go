@@ -37,6 +37,7 @@ const (
 	methodDownloadFile     = "downloadFile"
 	methodDownloadProgress = "downloadProgress"
 	methodDownloadCancel   = "downloadCancel"
+	methodFreeUpDisk       = "freeUpDisk"
 )
 
 type DaemonSwitch struct {
@@ -93,6 +94,12 @@ type DownloadProgressResult struct {
 
 type DownloadCancelReq struct {
 	FilePath string `json:"file_path"`
+}
+
+type FreeUpDiskReq struct {
+}
+
+type FreeUpDiskResp struct {
 }
 
 type JSONCallArgs struct {
@@ -159,6 +166,8 @@ func (clib *CLib) JSONCall(jsonStr string) *JSONCallResult {
 		return clib.downloadProgress(args.JSONParams)
 	case methodDownloadCancel:
 		return clib.downloadCancel(args.JSONParams)
+	case methodFreeUpDisk:
+		return clib.freeUpDisk(args.JSONParams)
 	default:
 		result.Code = -1
 		result.Msg = fmt.Sprintf("Method %s not found", args.Method)
@@ -334,7 +343,7 @@ func (clib *CLib) mergeConfig(jsonStr string) *JSONCallResult {
 	edgeConfig.Storage = newEdgeConfig.Storage
 	edgeConfig.Memory = newEdgeConfig.Memory
 	edgeConfig.CPU = newEdgeConfig.CPU
-	edgeConfig.Bandwidth.BandwidthMB = newEdgeConfig.Bandwidth.BandwidthMB
+	edgeConfig.Bandwidth.BandwidthKB = newEdgeConfig.Bandwidth.BandwidthKB
 
 	configBytes, err := config.GenerateConfigUpdate(edgeConfig, config.DefaultEdgeCfg(), true)
 	if err != nil {
@@ -501,4 +510,13 @@ func (clib *CLib) downloadCancel(jsonStr string) *JSONCallResult {
 	}
 
 	return &JSONCallResult{Code: 0, Msg: "ok"}
+}
+
+func (clib *CLib) freeUpDisk(jsonStr string) *JSONCallResult {
+	req := FreeUpDiskReq{}
+	err := json.Unmarshal([]byte(jsonStr), &req)
+	if err != nil {
+		return &JSONCallResult{Code: -1, Msg: fmt.Sprintf("marshal input args failed:%s", err.Error())}
+	}
+	return nil
 }

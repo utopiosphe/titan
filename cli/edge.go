@@ -58,6 +58,7 @@ var EdgeCmds = []*cli.Command{
 	deleteLocalAssetCmd,
 	upgradeCmd,
 	udpTestCmd,
+	freeUpDiskCmd,
 }
 
 var showCmds = &cli.Command{
@@ -100,7 +101,7 @@ var nodeInfoCmd = &cli.Command{
 		// fmt.Printf("netflow total: %s \n", units.BytesSize(float64(info.NetflowTotal)))
 		fmt.Printf("netflow upload: %s \n", units.BytesSize(float64(info.NetFlowUp)))
 		fmt.Printf("netflow download: %s \n", units.BytesSize(float64(info.NetFlowDown)))
-		fmt.Printf("upload bandwidth: %s \n", units.BytesSize(float64(info.BandwidthUp)))
+		// fmt.Printf("upload bandwidth: %s \n", units.BytesSize(float64(info.BandwidthUp)))
 		fmt.Printf("cpu percent: %.2f %s \n", info.CPUUsage, "%")
 		return nil
 	},
@@ -700,9 +701,9 @@ var mergeConfigCmd = &cli.Command{
 		edgeConfig.Storage = newEdgeConfig.Storage
 		edgeConfig.Memory = newEdgeConfig.Memory
 		edgeConfig.CPU = newEdgeConfig.CPU
-		edgeConfig.Bandwidth.BandwidthMB = newEdgeConfig.Bandwidth.BandwidthMB
-		edgeConfig.Bandwidth.BandwidthUp = newEdgeConfig.Bandwidth.BandwidthMB
-		edgeConfig.Bandwidth.BandwidthDown = newEdgeConfig.Bandwidth.BandwidthMB
+		edgeConfig.Bandwidth.BandwidthKB = newEdgeConfig.Bandwidth.BandwidthKB
+		edgeConfig.Bandwidth.BandwidthUp = newEdgeConfig.Bandwidth.BandwidthUp
+		edgeConfig.Bandwidth.BandwidthDown = newEdgeConfig.Bandwidth.BandwidthDown
 
 		configBytes, err := config.GenerateConfigUpdate(edgeConfig, config.DefaultEdgeCfg(), true)
 		if err != nil {
@@ -1287,5 +1288,99 @@ var udpTestCmd = &cli.Command{
 
 		log.Info("network test success")
 		return nil
+	},
+}
+
+var freeUpDiskCmd = &cli.Command{
+	Name:  "fuds",
+	Usage: "Free up disk space",
+	Subcommands: []*cli.Command{
+		{
+			Name:  "state",
+			Usage: "Check the last request to free up disk space is done. Example: --state",
+			Action: func(cctx *cli.Context) error {
+				api, edgeClose, err := getEdgeAPI(cctx)
+				if err != nil {
+					log.Errorf("get egde api failed: %s", err.Error())
+					return err
+				}
+				defer edgeClose()
+
+				nodeID, err := api.GetNodeID(cctx.Context)
+				if err != nil {
+					log.Errorf("get node-id failed: %s", err.Error())
+					return nil
+				}
+
+				schedulerAPI, schedulerClose, err := GetSchedulerAPI(cctx, nodeID)
+				if err != nil {
+					log.Errorf("get scheduler api failed: %s", err.Error())
+					return nil
+				}
+				defer schedulerClose()
+
+				events, err := schedulerAPI.GetReplicaEventsForNode(cctx.Context, nodeID, 100, 0)
+				if err != nil {
+					log.Errorf("load node replica events failed: %s", err.Error())
+					return err
+				}
+
+				if events.Total > 0 {
+					log.Info("free up disk is pending")
+					return nil
+				}
+
+				log.Info("free up disk is done!")
+				return nil
+			},
+		},
+	},
+	Flags: []cli.Flag{
+		&cli.Float64Flag{
+			Name:  "size",
+			Value: 0,
+			Usage: "Size of request free up disk space, units is GB, example: --size 1.1",
+			Action: func(cctx *cli.Context, f float64) error {
+				if f <= 0 {
+					return nil
+				}
+				freeBytes := int64(f * units.GiB)
+
+				api, edgeClose, err := getEdgeAPI(cctx)
+				if err != nil {
+					log.Errorf("get egde api failed: %s", err.Error())
+					return err
+				}
+				defer edgeClose()
+
+				nodeID, err := api.GetNodeID(cctx.Context)
+				if err != nil {
+					log.Errorf("get node-id failed: %s", err.Error())
+					return nil
+				}
+
+				schedulerAPI, schedulerClose, err := GetSchedulerAPI(cctx, nodeID)
+				if err != nil {
+					log.Errorf("get scheduler api failed: %s", err.Error())
+					return nil
+				}
+				defer schedulerClose()
+
+				err = schedulerAPI.FreeUpDiskSpace(cctx.Context, nodeID, freeBytes)
+				if err != nil {
+					log.Errorf("request to free up disk of %d bytes to scheduler failed :%s", freeBytes, err.Error())
+					return err
+				}
+				return nil
+			},
+		},
+
+		// &cli.ActionFunc{
+		// 	Name:  "state",
+		// 	Usage: "Check the last request to free up disk space is done. Example: --state",
+		// 	Action: func(ctx *cli.Context, i int) error {
+		// 		return nil
+		// 	},
+		// },
 	},
 }
