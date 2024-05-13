@@ -487,7 +487,7 @@ func (s *Scheduler) AddProfits(ctx context.Context, nodes []string, profit float
 	return s.db.UpdateNodeProfit(nodes, profit)
 }
 
-// UpdateNetflows update node netflow tatal,up,down usage
-func (s *Scheduler) UpdateNetflows(ctx context.Context, total, up, down int64) error {
+// UpdateNetFlows update node net flow total,up,down usage
+func (s *Scheduler) UpdateNetFlows(ctx context.Context, total, up, down int64) error {
 	return nil
 }
