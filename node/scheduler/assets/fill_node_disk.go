@@ -375,15 +375,15 @@ func (m *Manager) UpdateFillAssetResponseCount(bucket, cid, nodeID string, size 
 		if node != nil {
 			m.storeNodeToFillAsset(cid, node)
 		}
+
+		// workload
+		wID := m.createSeedWorkload(AssetPullingInfo{CID: cid, Size: size}, nodeID)
+		costTime := int64(time.Since(info.CreateTime) / time.Millisecond)
+
+		m.workloadMgr.PushResult(&types.WorkloadRecordReq{AssetCID: cid, WorkloadID: wID, Workloads: []types.Workload{{SourceID: types.DownloadSourceAWS.String(), DownloadSize: size, CostTime: costTime}}}, nodeID)
 	}
 
 	m.fillAssets.Store(bucket, info)
-
-	// workload
-	wID := m.createSeedWorkload(AssetPullingInfo{CID: cid, Size: size}, nodeID)
-	costTime := int64(time.Since(info.CreateTime) / time.Millisecond)
-
-	m.workloadMgr.PushResult(&types.WorkloadRecordReq{AssetCID: cid, WorkloadID: wID, Workloads: []types.Workload{{SourceID: types.DownloadSourceAWS.String(), DownloadSize: size, CostTime: costTime}}}, nodeID)
 }
 
 func (m *Manager) getPullAssetTask() *fillAssetInfo {

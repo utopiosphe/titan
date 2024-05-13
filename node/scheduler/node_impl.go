@@ -356,7 +356,7 @@ func (s *Scheduler) GetNodeInfo(ctx context.Context, nodeID string) (types.NodeI
 		nodeInfo.NetFlowUp = node.NetFlowUp
 		nodeInfo.NetFlowDown = node.NetFlowDown
 
-		log.Debugf("%s node select codes:%v", nodeID, node.SelectWeights())
+		log.Debugf("%s node select codes:%v , url:%s", nodeID, node.SelectWeights(), node.ExternalURL)
 	}
 
 	return nodeInfo, nil
