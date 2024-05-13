@@ -1096,16 +1096,15 @@ func (m *Manager) chooseCandidateNodes(count int, filterNodes []string) (map[str
 		filterMap[nodeID] = struct{}{}
 	}
 
-	// _, nodes := m.nodeMgr.GetAllCandidateNodes()
-	// sort.Slice(nodes, func(i, j int) bool {
-	// 	return nodes[i].TitanDiskUsage < nodes[j].TitanDiskUsage
-	// })
+	_, nodes := m.nodeMgr.GetAllCandidateNodes()
+	sort.Slice(nodes, func(i, j int) bool {
+		return nodes[i].TitanDiskUsage < nodes[j].TitanDiskUsage
+	})
 
-	num := count * selectNodeRetryLimit
-
-	nodes := m.nodeMgr.GetRandomCandidates(num)
-	for nodeID := range nodes {
-		node := m.nodeMgr.GetCandidateNode(nodeID)
+	// num := count * selectNodeRetryLimit
+	// nodes := m.nodeMgr.GetRandomCandidates(num)
+	for _, node := range nodes {
+		// node := m.nodeMgr.GetCandidateNode(nodeID)
 		if node == nil {
 			continue
 		}
