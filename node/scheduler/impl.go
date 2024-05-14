@@ -220,6 +220,8 @@ func (s *Scheduler) nodeConnect(ctx context.Context, opts *types.ConnectOptions,
 	cNode.IncomeIncr = (s.NodeManager.NodeCalculateMCx(cNode.IsPhone) * 360)
 	cNode.NetFlowUp = nodeInfo.NetFlowUp
 	cNode.NetFlowDown = nodeInfo.NetFlowDown
+	cNode.DownloadTraffic = nodeInfo.DownloadTraffic
+	cNode.UploadTraffic = nodeInfo.UploadTraffic
 
 	if !alreadyConnect {
 		version, err := cNode.API.Version(ctx)
