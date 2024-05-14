@@ -14,7 +14,7 @@ const (
 	mr = 1.0
 	mo = 1.0
 
-	phoneWeighting = 5.0
+	phoneWeighting = 1.0
 )
 
 var (
@@ -88,7 +88,7 @@ func (m *Manager) GetNodePullProfitDetails(node *Node, size float64, note string
 	lip := len(m.GetNodeOfIP(node.ExternalIP))
 	mn := calculateMn(lip)
 
-	mbnd := mr * mx * mo * d * downloadTrafficProfit * mip * mn
+	mbnd := mr * mx * mo * d * downloadTrafficProfit * mip * mn * w
 
 	if mbnd < 0.000001 {
 		return nil
@@ -115,7 +115,7 @@ func (m *Manager) GetNodeBePullProfitDetails(node *Node, size float64, note stri
 	lip := len(m.GetNodeOfIP(node.ExternalIP))
 	mn := calculateMn(lip)
 
-	mbnu := mr * mx * mo * u * b * uploadTrafficProfit * mip * mn
+	mbnu := mr * mx * mo * u * b * uploadTrafficProfit * mip * mn * w
 
 	if mbnu < 0.000001 {
 		return nil
@@ -142,7 +142,7 @@ func (m *Manager) GetNodeValidatorProfitDetails(node *Node, size float64) *types
 	lip := len(m.GetNodeOfIP(node.ExternalIP))
 	mn := calculateMn(lip)
 
-	mbnd := mr * mx * mo * d * downloadTrafficProfit * mip * mn
+	mbnd := mr * mx * mo * d * downloadTrafficProfit * mip * mn * w
 
 	if mbnd < 0.000001 {
 		return nil
@@ -174,7 +174,7 @@ func (m *Manager) GetNodeValidatableProfitDetails(node *Node, size float64) *typ
 	lip := len(m.GetNodeOfIP(node.ExternalIP))
 	mn := calculateMn(lip)
 
-	ms := mr * mx * mo * ((min(s, 2000) * 0.211148679 * mt) + (u * b * uploadTrafficProfit * mip * mn))
+	ms := mr * mx * mo * ((min(s, 2000) * 0.211148679 * mt) + (u * b * uploadTrafficProfit * mip * mn)) * w
 
 	if ms < 0.000001 {
 		return nil
@@ -191,14 +191,14 @@ func (m *Manager) GetNodeValidatableProfitDetails(node *Node, size float64) *typ
 
 // NodeCalculateMCx
 func (m *Manager) NodeCalculateMCx(isPhone bool) float64 {
-	// w := 1.0
-	// if isPhone {
-	// 	w = phoneWeighting
-	// }
+	w := 1.0
+	if isPhone {
+		w = phoneWeighting
+	}
 
 	b := 20.0 / 17280.0
 
-	mcx := mr * mx * mo * b
+	mcx := mr * mx * mo * b * w
 
 	return mcx
 }

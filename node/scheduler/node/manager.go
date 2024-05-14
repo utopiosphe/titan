@@ -401,10 +401,6 @@ func (m *Manager) nodesKeepalive(isSave bool) {
 		if m.nodeKeepalive(node, t) {
 			incomeIncr := incomeIncrW
 			profit := profitW
-			if node.IsPhone {
-				incomeIncr = incomeIncrP
-				profit = profitP
-			}
 
 			// add node mc
 			node.IncomeIncr = incomeIncr
