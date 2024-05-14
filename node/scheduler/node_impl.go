@@ -1391,7 +1391,8 @@ func (s *Scheduler) GenerateCandidateCode(ctx context.Context, count int, nodeTy
 	infos := make([]*types.CandidateCodeInfo, 0)
 	out := make([]string, 0)
 	for i := 0; i < count; i++ {
-		code := generateRandomString(8)
+		code := uuid.NewString()
+		code = strings.Replace(code, "-", "", -1)
 
 		infos = append(infos, &types.CandidateCodeInfo{Code: code, NodeType: nodeType, Expiration: time.Now().Add(time.Hour * 24)})
 		out = append(out, code)
