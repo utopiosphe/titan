@@ -81,11 +81,11 @@ func analyzeNodeNATType(ctx context.Context, eNode *node.Node, candidateNodes []
 }
 
 // determineNATType detect the NAT type of an edge node
-func determineNodeNATType(ctx context.Context, edgeNode *node.Node, candidateNodes []*node.Node, http3Client *http.Client) (types.NatType, error) {
+func determineNodeNATType(ctx context.Context, edgeNode *node.Node, candidateNodes []*node.Node, http3Client *http.Client) types.NatType {
 	natType, err := analyzeNodeNATType(ctx, edgeNode, candidateNodes, http3Client)
 	if err != nil {
-		log.Warnf("determineNATType, error: %s", err.Error())
+		log.Warnf("determineNATType, %s error: %s", edgeNode.NodeID, err.Error())
 		natType = types.NatTypeUnknown
 	}
-	return natType, nil
+	return natType
 }
