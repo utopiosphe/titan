@@ -1,9 +1,15 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/Filecoin-Titan/titan/api/client"
 	"github.com/Filecoin-Titan/titan/api/types"
+	"github.com/Filecoin-Titan/titan/node/repo"
+	titanrsa "github.com/Filecoin-Titan/titan/node/rsa"
+	"github.com/filecoin-project/go-jsonrpc"
+	"github.com/google/uuid"
 	"github.com/urfave/cli/v2"
 )
 
@@ -13,60 +19,53 @@ var CandidateCmds = []*cli.Command{
 	progressCmd,
 	keyCmds,
 	configCmds,
-	registerCmds,
 	bindCmd,
 }
 
-var registerCmds = &cli.Command{
-	Name:  "register",
-	Usage: "register candidate to scheduler",
-	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:  "locator-url",
-			Usage: "--locator=https://titan-locator-domain/rpc/v0",
-			Value: "",
-		},
-		&cli.StringFlag{
-			Name:  "scheduler-url",
-			Usage: "--locator=https://titan-locator-domain/rpc/v0",
-			Value: "",
-		},
-		&cli.IntFlag{
-			Name:  "node-type",
-			Usage: "--node-type=2, 2:candidate,3:validator",
-		},
-		&cli.StringFlag{
-			Name:  "code",
-			Usage: "candidate register code",
-			Value: "",
-		},
-	},
-	Action: func(cctx *cli.Context) error {
-		locatorURL := cctx.String("locator-url")
-		if len(locatorURL) == 0 {
-			return fmt.Errorf("--locator-url can not empty")
-		}
+func allocateSchedulerForCandidate(locatorURL, code string) (string, error) {
+	locator, close, err := client.NewLocator(context.Background(), locatorURL, nil, jsonrpc.WithHTTPClient(client.NewHTTP3Client()))
+	if err != nil {
+		return "", err
+	}
+	defer close()
 
-		schedulerURL := cctx.String("scheduler-url")
-		if len(schedulerURL) == 0 {
-			return fmt.Errorf("--scheduler-url can not empty")
-		}
+	return locator.AllocateSchedulerForNode(context.Background(), types.NodeCandidate, code)
+}
 
-		code := cctx.String("code")
-		if len(code) == 0 {
-			return fmt.Errorf("--code can not empty")
-		}
+func RegisterCandidateNode(lr repo.LockedRepo, locatorURL string, code string) error {
+	schedulerURL, err := allocateSchedulerForCandidate(locatorURL, code)
+	if err != nil {
+		return err
+	}
 
-		nodeType := cctx.Int("node-type")
-		if nodeType != int(types.NodeCandidate) && nodeType != int(types.NodeValidator) {
-			return fmt.Errorf("Must set --node-type=2 or --node-type=3")
-		}
-		_, lr, err := openRepoAndLock(cctx)
-		if err != nil {
-			return err
-		}
-		defer lr.Close() //nolint:errcheck  // ignore error
+	schedulerAPI, closer, err := client.NewScheduler(context.Background(), schedulerURL, nil, jsonrpc.WithHTTPClient(client.NewHTTP3Client()))
+	if err != nil {
+		return err
+	}
+	defer closer()
 
-		return RegisterNodeWithScheduler(lr, schedulerURL, locatorURL, types.NodeCandidate, code)
-	},
+	bits := 1024
+	privateKey, err := titanrsa.GeneratePrivateKey(bits)
+	if err != nil {
+		return err
+	}
+
+	pem := titanrsa.PublicKey2Pem(&privateKey.PublicKey)
+	nodeID := fmt.Sprintf("c_%s", uuid.NewString())
+
+	info, err := schedulerAPI.RegisterCandidateNode(context.Background(), nodeID, string(pem), code)
+	if err != nil {
+		return err
+	}
+
+	privatePem := titanrsa.PrivateKey2Pem(privateKey)
+	if err := lr.SetPrivateKey(privatePem); err != nil {
+		return err
+	}
+
+	if err := lr.SetNodeID([]byte(nodeID)); err != nil {
+		return err
+	}
+
+	return saveConfigAfterRegister(lr, info, locatorURL)
 }

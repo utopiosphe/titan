@@ -121,7 +121,7 @@ func (a *CommonAPI) Closing(context.Context) (<-chan struct{}, error) {
 
 // ExternalServiceAddress returns the external service address of the scheduler.
 func (a *CommonAPI) ExternalServiceAddress(ctx context.Context, candidateURL string) (string, error) {
-	if types.RunningNodeType == types.NodeScheduler {
+	if types.RunningNodeType == types.NodeScheduler || types.RunningNodeType == types.NodeLocator {
 		return "", fmt.Errorf("not implement")
 	}
 

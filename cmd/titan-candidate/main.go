@@ -155,10 +155,6 @@ var daemonStartCmd = &cli.Command{
 			Usage: "--url=https://titan-server-domain/rpc/v0",
 			Value: "",
 		},
-		&cli.IntFlag{
-			Name:  "node-type",
-			Usage: "--node-type=2, 2:candidate, 3:validator",
-		},
 		&cli.StringFlag{
 			Name:  "code",
 			Usage: "candidate register code",
@@ -185,11 +181,6 @@ var daemonStartCmd = &cli.Command{
 			return err
 		}
 
-		code := cctx.String("code")
-		if len(code) == 0 {
-			return fmt.Errorf("--code can not empty")
-		}
-
 		ok, err := r.Exists()
 		if err != nil {
 			return err
@@ -213,12 +204,12 @@ var daemonStartCmd = &cli.Command{
 				return fmt.Errorf("Must set --url for --init")
 			}
 
-			nodeType := cctx.Int("node-type")
-			if nodeType != int(types.NodeCandidate) && nodeType != int(types.NodeValidator) {
-				return fmt.Errorf("Must set --node-type=2 or --node-type=3")
+			code := cctx.String("code")
+			if len(code) == 0 {
+				return fmt.Errorf("--code can not empty")
 			}
 
-			if err := lcli.RegitsterNode(lr, locatorURL, types.NodeType(nodeType), code); err != nil {
+			if err := lcli.RegisterCandidateNode(lr, locatorURL, code); err != nil {
 				return err
 			}
 		}

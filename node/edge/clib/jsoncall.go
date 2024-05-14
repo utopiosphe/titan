@@ -16,7 +16,6 @@ import (
 	"github.com/Filecoin-Titan/titan/api"
 	"github.com/Filecoin-Titan/titan/api/client"
 	"github.com/Filecoin-Titan/titan/api/types"
-	lcli "github.com/Filecoin-Titan/titan/cli"
 	"github.com/Filecoin-Titan/titan/node/config"
 	"github.com/Filecoin-Titan/titan/node/repo"
 	titanrsa "github.com/Filecoin-Titan/titan/node/rsa"
@@ -331,32 +330,6 @@ func (clib *CLib) mergeConfig(jsonStr string) *JSONCallResult {
 	}
 
 	edgeConfig := cfg.(*config.EdgeCfg)
-
-	if len(edgeConfig.Basic.Token) == 0 {
-		r, err := openRepoOrNew(req.RepoPath)
-		if err != nil {
-			return &JSONCallResult{Code: -1, Msg: err.Error()}
-		}
-
-		lr, err := r.Lock(repo.Edge)
-		if err != nil {
-			return &JSONCallResult{Code: -1, Msg: err.Error()}
-		}
-
-		defer lr.Close()
-
-		if err := lcli.RegitsterNode(lr, newEdgeConfig.Network.LocatorURL, types.NodeEdge, ""); err != nil {
-			return &JSONCallResult{Code: -1, Msg: fmt.Sprintf("import private key error %s", err.Error())}
-		}
-
-		// reload config
-		cfg, err := config.FromFile(configPath, config.DefaultEdgeCfg())
-		if err != nil {
-			return &JSONCallResult{Code: -1, Msg: fmt.Sprintf("load local config file error %s", err.Error())}
-		}
-
-		edgeConfig = cfg.(*config.EdgeCfg)
-	}
 
 	edgeConfig.Storage = newEdgeConfig.Storage
 	edgeConfig.Memory = newEdgeConfig.Memory

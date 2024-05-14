@@ -621,7 +621,7 @@ func (l *Locator) GetSchedulerWithAPIKey(ctx context.Context, apiKey string) (st
 	return schedulerURL, nil
 }
 
-func (l *Locator) AllocateSchedulerForNode(ctx context.Context, nodeType types.NodeType) (string, error) {
+func (l *Locator) AllocateSchedulerForNode(ctx context.Context, nodeType types.NodeType, code string) (string, error) {
 	configs := l.GetAllSchedulerConfigs()
 	schedulerAPIs, err := l.getOrNewSchedulerAPIs(configs)
 	if err != nil {
@@ -640,11 +640,7 @@ func (l *Locator) AllocateSchedulerForNode(ctx context.Context, nodeType types.N
 	ctx, cancel := context.WithTimeout(ctx, timeout*time.Second)
 	defer cancel()
 
-	type scheduler struct {
-		nodeCount int
-		url       string
-	}
-	schedulers := make([]scheduler, 0)
+	var scheduler string
 	wg := &sync.WaitGroup{}
 	for _, api := range schedulerAPIs {
 		wg.Add(1)
@@ -652,24 +648,23 @@ func (l *Locator) AllocateSchedulerForNode(ctx context.Context, nodeType types.N
 		go func(ctx context.Context, s *SchedulerAPI) {
 			defer wg.Done()
 
-			if count, err := s.GetOnlineNodeCount(ctx, nodeType); err == nil {
-				schedulers = append(schedulers, scheduler{nodeCount: count, url: s.config.SchedulerURL})
+			if ok, err := s.CandidateCodeExist(ctx, code); err == nil {
+				if ok {
+					scheduler = s.config.SchedulerURL
+					cancel()
+				}
 			} else {
-				log.Debugf("GetOnlineNodeCount %s", err.Error())
+				log.Debugf("CandidateCodeExist %s", err.Error())
 			}
 		}(ctx, api)
 	}
 	wg.Wait()
 
-	sort.Slice(schedulers, func(i, j int) bool {
-		return schedulers[i].nodeCount < schedulers[j].nodeCount
-	})
-
-	if len(schedulers) > 0 {
-		return schedulers[0].url, nil
+	if len(scheduler) == 0 {
+		return "", fmt.Errorf("code %s not exist any scheduler", code)
 	}
 
-	return "", fmt.Errorf("can not find scheduler")
+	return scheduler, nil
 
 }
 

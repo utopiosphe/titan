@@ -477,7 +477,7 @@ func daemonStart(ctx context.Context, daemonSwitch *clib.DaemonSwitch, repoPath,
 		if len(locatorURL) == 0 {
 			return fmt.Errorf("Must set --url")
 		}
-		if err := lcli.RegitsterNode(lr, locatorURL, types.NodeEdge, ""); err != nil {
+		if err := lcli.RegisterEdgeNode(lr, locatorURL); err != nil {
 			return err
 		}
 	}

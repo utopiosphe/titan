@@ -732,48 +732,7 @@ func checkPath(path string) error {
 	return nil
 }
 
-func RegisterNodeWithScheduler(lr repo.LockedRepo, schedulerURL, locatorURL string, nodeType types.NodeType, code string) error {
-	schedulerAPI, closer, err := client.NewScheduler(context.Background(), schedulerURL, nil, jsonrpc.WithHTTPClient(client.NewHTTP3Client()))
-	if err != nil {
-		return err
-	}
-	defer closer()
-
-	bits := 1024
-
-	privateKey, err := titanrsa.GeneratePrivateKey(bits)
-	if err != nil {
-		return err
-	}
-
-	pem := titanrsa.PublicKey2Pem(&privateKey.PublicKey)
-	var nodeID string
-	var info *types.ActivationDetail
-	if nodeType == types.NodeEdge {
-		nodeID = fmt.Sprintf("e_%s", uuid.NewString())
-		info, err = schedulerAPI.RegisterNode(context.Background(), nodeID, string(pem), nodeType)
-		if err != nil {
-			return err
-		}
-	} else if nodeType == types.NodeCandidate || nodeType == types.NodeValidator {
-		nodeID = fmt.Sprintf("c_%s", uuid.NewString())
-		info, err = schedulerAPI.RegisterCandidateNode(context.Background(), nodeID, string(pem), code)
-		if err != nil {
-			return err
-		}
-	} else {
-		return fmt.Errorf("RegisterNodeWithScheduler, invalid node type %s", nodeType.String())
-	}
-
-	privatePem := titanrsa.PrivateKey2Pem(privateKey)
-	if err := lr.SetPrivateKey(privatePem); err != nil {
-		return err
-	}
-
-	if err := lr.SetNodeID([]byte(nodeID)); err != nil {
-		return err
-	}
-
+func saveConfigAfterRegister(lr repo.LockedRepo, info *types.ActivationDetail, locatorURL string) error {
 	tokenBytes, err := json.Marshal(info)
 	if err != nil {
 		return err
@@ -795,34 +754,43 @@ func RegisterNodeWithScheduler(lr repo.LockedRepo, schedulerURL, locatorURL stri
 	})
 }
 
-func RegitsterNode(lr repo.LockedRepo, locatorURL string, nodeType types.NodeType, code string) error {
-	if nodeType != types.NodeEdge && nodeType != types.NodeCandidate && nodeType != types.NodeValidator {
-		return fmt.Errorf("RegitsterNode, invalid node type %s %d", nodeType.String(), nodeType)
-	}
-
-	var err error
-	var schedulerURL string
-	if nodeType == types.NodeEdge {
-		schedulerURL, err = getUserAccessPoint(locatorURL)
-	} else {
-		schedulerURL, err = allocateSchedulerForNode(locatorURL, nodeType)
-	}
-
+func RegisterEdgeNode(lr repo.LockedRepo, locatorURL string) error {
+	schedulerURL, err := getUserAccessPoint(locatorURL)
 	if err != nil {
 		return err
 	}
 
-	return RegisterNodeWithScheduler(lr, schedulerURL, locatorURL, nodeType, code)
-}
-
-func allocateSchedulerForNode(locatorURL string, nodeType types.NodeType) (string, error) {
-	locator, close, err := client.NewLocator(context.Background(), locatorURL, nil, jsonrpc.WithHTTPClient(client.NewHTTP3Client()))
+	schedulerAPI, closer, err := client.NewScheduler(context.Background(), schedulerURL, nil, jsonrpc.WithHTTPClient(client.NewHTTP3Client()))
 	if err != nil {
-		return "", err
+		return err
 	}
-	defer close()
+	defer closer()
 
-	return locator.AllocateSchedulerForNode(context.Background(), nodeType)
+	bits := 1024
+
+	privateKey, err := titanrsa.GeneratePrivateKey(bits)
+	if err != nil {
+		return err
+	}
+
+	pem := titanrsa.PublicKey2Pem(&privateKey.PublicKey)
+	nodeID := fmt.Sprintf("e_%s", uuid.NewString())
+
+	info, err := schedulerAPI.RegisterNode(context.Background(), nodeID, string(pem), types.NodeEdge)
+	if err != nil {
+		return err
+	}
+
+	privatePem := titanrsa.PrivateKey2Pem(privateKey)
+	if err := lr.SetPrivateKey(privatePem); err != nil {
+		return err
+	}
+
+	if err := lr.SetNodeID([]byte(nodeID)); err != nil {
+		return err
+	}
+
+	return saveConfigAfterRegister(lr, info, locatorURL)
 }
 
 var stateCmd = &cli.Command{
