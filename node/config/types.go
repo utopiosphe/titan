@@ -19,18 +19,18 @@ type Storage struct {
 }
 
 type Bandwidth struct {
-	// unit is MB/s
-	BandwidthMB int64
-	// upload file bandwidth, unit is MB/s
+	// unit is KB/s, 0 means no limit
+	BandwidthKB int64
+	// upload file bandwidth, unit is KB/s, 0 means no limit
 	BandwidthUp int64
-	// download file bandwidth, unit is MB/s
+	// download file bandwidth, unit is KB/s, 0 means no limit
 	BandwidthDown int64
 }
 
 type Netflow struct {
-	// upload network flow limit, unit is B
+	// upload network flow limit, unit is GB, 0 means no limit
 	NetflowUp int64
-	// download network flow limit, unit is B
+	// download network flow limit, unit is GB, 0 means no limit
 	NetflowDown int64
 }
 

@@ -294,6 +294,10 @@ func bToMB(b float64) float64 {
 	return b / 1024 / 1024
 }
 
+func bToKB(b float64) float64 {
+	return b / 1024
+}
+
 func min(a, b float64) float64 {
 	if a < b {
 		return a

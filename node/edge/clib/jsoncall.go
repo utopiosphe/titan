@@ -359,7 +359,7 @@ func (clib *CLib) mergeConfig(jsonStr string) *JSONCallResult {
 	edgeConfig.Storage = newEdgeConfig.Storage
 	edgeConfig.Memory = newEdgeConfig.Memory
 	edgeConfig.CPU = newEdgeConfig.CPU
-	edgeConfig.Bandwidth.BandwidthMB = newEdgeConfig.Bandwidth.BandwidthMB
+	edgeConfig.Bandwidth.BandwidthKB = newEdgeConfig.Bandwidth.BandwidthKB
 
 	configBytes, err := config.GenerateConfigUpdate(edgeConfig, config.DefaultEdgeCfg(), true)
 	if err != nil {

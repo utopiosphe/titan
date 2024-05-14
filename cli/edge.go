@@ -100,7 +100,7 @@ var nodeInfoCmd = &cli.Command{
 		// fmt.Printf("netflow total: %s \n", units.BytesSize(float64(info.NetflowTotal)))
 		fmt.Printf("netflow upload: %s \n", units.BytesSize(float64(info.NetFlowUp)))
 		fmt.Printf("netflow download: %s \n", units.BytesSize(float64(info.NetFlowDown)))
-		fmt.Printf("upload bandwidth: %s \n", units.BytesSize(float64(info.BandwidthUp)))
+		// fmt.Printf("upload bandwidth: %s \n", units.BytesSize(float64(info.BandwidthUp)))
 		fmt.Printf("cpu percent: %.2f %s \n", info.CPUUsage, "%")
 		return nil
 	},
@@ -700,9 +700,9 @@ var mergeConfigCmd = &cli.Command{
 		edgeConfig.Storage = newEdgeConfig.Storage
 		edgeConfig.Memory = newEdgeConfig.Memory
 		edgeConfig.CPU = newEdgeConfig.CPU
-		edgeConfig.Bandwidth.BandwidthMB = newEdgeConfig.Bandwidth.BandwidthMB
-		edgeConfig.Bandwidth.BandwidthUp = newEdgeConfig.Bandwidth.BandwidthMB
-		edgeConfig.Bandwidth.BandwidthDown = newEdgeConfig.Bandwidth.BandwidthMB
+		edgeConfig.Bandwidth.BandwidthKB = newEdgeConfig.Bandwidth.BandwidthKB
+		edgeConfig.Bandwidth.BandwidthUp = newEdgeConfig.Bandwidth.BandwidthUp
+		edgeConfig.Bandwidth.BandwidthDown = newEdgeConfig.Bandwidth.BandwidthDown
 
 		configBytes, err := config.GenerateConfigUpdate(edgeConfig, config.DefaultEdgeCfg(), true)
 		if err != nil {

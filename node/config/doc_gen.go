@@ -11,22 +11,22 @@ type DocField struct {
 var Doc = map[string][]DocField{
 	"Bandwidth": []DocField{
 		{
-			Name: "BandwidthMB",
+			Name: "BandwidthKB",
 			Type: "int64",
 
-			Comment: `unit is MB/s`,
+			Comment: `unit is KB/s, 0 means no limit`,
 		},
 		{
 			Name: "BandwidthUp",
 			Type: "int64",
 
-			Comment: `upload file bandwidth, unit is MB/s`,
+			Comment: `upload file bandwidth, unit is KB/s, 0 means no limit`,
 		},
 		{
 			Name: "BandwidthDown",
 			Type: "int64",
 
-			Comment: `download file bandwidth, unit is MB/s`,
+			Comment: `download file bandwidth, unit is KB/s, 0 means no limit`,
 		},
 	},
 	"Basic": []DocField{
@@ -292,13 +292,13 @@ be used if InsecureSkipVerify is false`,
 			Name: "NetflowUp",
 			Type: "int64",
 
-			Comment: `upload network flow limit, unit is B`,
+			Comment: `upload network flow limit, unit is GB, 0 means no limit`,
 		},
 		{
 			Name: "NetflowDown",
 			Type: "int64",
 
-			Comment: `download network flow limit, unit is B`,
+			Comment: `download network flow limit, unit is GB, 0 means no limit`,
 		},
 	},
 	"Network": []DocField{

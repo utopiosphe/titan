@@ -52,20 +52,18 @@ func DefaultEdgeCfg() *EdgeCfg {
 			MemoryGB: 1,
 		},
 		Bandwidth: Bandwidth{
-			// 10MB/s
-			BandwidthMB: 10,
-			// 100MB/s
-			BandwidthUp: 100,
-			// 1G/s
-			BandwidthDown: 1024,
+			// unlimited
+			BandwidthKB: 0,
+			// unlimited
+			BandwidthUp: 0,
+			// unlimited
+			BandwidthDown: 0,
 		},
 		Netflow: Netflow{
-			// 100GB
-			// Total: 100 << 30,
-			// 50GB
-			NetflowUp: 50 << 30,
-			// 50GB
-			NetflowDown: 50 << 30,
+			// unlimited
+			NetflowUp: 0,
+			// unlimited
+			NetflowDown: 0,
 		},
 		CPU: CPU{
 			Cores: 1,
@@ -107,12 +105,18 @@ func DefaultCandidateCfg() *CandidateCfg {
 			MemoryGB: 1,
 		},
 		Bandwidth: Bandwidth{
-			// 1GB/s
-			BandwidthMB: 1024,
-			// 1GB/s
-			BandwidthUp: 1024,
-			// 1GB/s
-			BandwidthDown: 1024,
+			// unlimited
+			BandwidthKB: 0,
+			// unlimited
+			BandwidthUp: 0,
+			// unlimited
+			BandwidthDown: 0,
+		},
+		Netflow: Netflow{
+			// unlimited
+			NetflowUp: 0,
+			// unlimited
+			NetflowDown: 0,
 		},
 		CPU: CPU{
 			Cores: 1,
