@@ -277,3 +277,12 @@ var cProfitDetailsTable = `
 	    KEY idx_node_id (node_id),
 	    KEY idx_time (created_time)
     ) ENGINE=InnoDB COMMENT='profit details';`
+
+var cCandidateCodeTable = `
+    CREATE TABLE if not exists %s (
+	    code          VARCHAR(128)   NOT NULL,		
+		expiration    DATETIME       DEFAULT CURRENT_TIMESTAMP,
+		node_type     INT            NOT NULL,
+		node_id       VARCHAR(128)   DEFAULT '',
+		PRIMARY KEY (code)
+    ) ENGINE=InnoDB COMMENT='candidate code';`

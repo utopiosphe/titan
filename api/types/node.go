@@ -543,3 +543,10 @@ type RateLimiter struct {
 	BandwidthUpLimiter   *rate.Limiter
 	BandwidthDownLimiter *rate.Limiter
 }
+
+type CandidateCodeInfo struct {
+	Code       string    `db:"code"`
+	NodeType   NodeType  `db:"node_type"`
+	Expiration time.Time `db:"expiration"`
+	NodeID     string    `db:"node_id"`
+}

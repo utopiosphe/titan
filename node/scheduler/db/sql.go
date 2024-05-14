@@ -46,6 +46,7 @@ const (
 	userAssetGroupTable   = "user_asset_group"
 	awsDataTable          = "aws_data"
 	profitDetailsTable    = "profit_details"
+	candidateCodeTable    = "candidate_code"
 
 	// Default limits for loading table entries.
 	loadNodeInfosDefaultLimit           = 1000
@@ -103,6 +104,7 @@ func InitTables(d *SQLDB, serverID dtypes.ServerID) error {
 	tx.MustExec(fmt.Sprintf(cUserAssetGroupTable, userAssetGroupTable))
 	tx.MustExec(fmt.Sprintf(cAWSDataTable, awsDataTable))
 	tx.MustExec(fmt.Sprintf(cProfitDetailsTable, profitDetailsTable))
+	tx.MustExec(fmt.Sprintf(cCandidateCodeTable, candidateCodeTable))
 
 	return tx.Commit()
 }

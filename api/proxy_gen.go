@@ -298,6 +298,8 @@ type NodeAPIStruct struct {
 
 		AddProfits func(p0 context.Context, p1 []string, p2 float64) (error) `perm:"admin"`
 
+		CandidateCodeExist func(p0 context.Context, p1 string) (bool, error) `perm:"admin,web,locator"`
+
 		CandidateConnect func(p0 context.Context, p1 *types.ConnectOptions) (error) `perm:"candidate"`
 
 		CheckIpUsage func(p0 context.Context, p1 string) (bool, error) `perm:"admin,web,locator"`
@@ -309,6 +311,8 @@ type NodeAPIStruct struct {
 		EdgeConnect func(p0 context.Context, p1 *types.ConnectOptions) (error) `perm:"edge"`
 
 		FreeUpDiskSpace func(p0 context.Context, p1 string, p2 int64) (error) `perm:"edge,candidate,web,locator"`
+
+		GenerateCandidateCode func(p0 context.Context, p1 int, p2 types.NodeType) ([]string, error) `perm:"admin"`
 
 		GetAssetSourceDownloadInfo func(p0 context.Context, p1 string) (*types.AssetSourceDownloadInfoRsp, error) `perm:"edge,candidate,web,locator"`
 
@@ -358,6 +362,8 @@ type NodeAPIStruct struct {
 
 		PerformSyncData func(p0 context.Context, p1 string) (error) `perm:"admin"`
 
+		RegisterCandidateNode func(p0 context.Context, p1 string, p2 string, p3 string) (*types.ActivationDetail, error) `perm:"default"`
+
 		RegisterEdgeNode func(p0 context.Context, p1 string, p2 string) (*types.ActivationDetail, error) `perm:"default"`
 
 		RegisterNode func(p0 context.Context, p1 string, p2 string, p3 types.NodeType) (*types.ActivationDetail, error) `perm:"default"`
@@ -369,6 +375,8 @@ type NodeAPIStruct struct {
 		UpdateBandwidths func(p0 context.Context, p1 int64, p2 int64) (error) `perm:"edge,candidate"`
 
 		UpdateNetFlows func(p0 context.Context, p1 int64, p2 int64, p3 int64) (error) `perm:"edge"`
+
+		UpdateNodeDynamicInfo func(p0 context.Context, p1 *types.NodeDynamicInfo) (error) `perm:"admin"`
 
 		UpdateNodePort func(p0 context.Context, p1 string, p2 string) (error) `perm:"web,admin"`
 
@@ -1320,6 +1328,17 @@ func (s *NodeAPIStub) AddProfits(p0 context.Context, p1 []string, p2 float64) (e
 	return ErrNotSupported
 }
 
+func (s *NodeAPIStruct) CandidateCodeExist(p0 context.Context, p1 string) (bool, error) {
+	if s.Internal.CandidateCodeExist == nil {
+		return false, ErrNotSupported
+	}
+	return s.Internal.CandidateCodeExist(p0, p1)
+}
+
+func (s *NodeAPIStub) CandidateCodeExist(p0 context.Context, p1 string) (bool, error) {
+	return false, ErrNotSupported
+}
+
 func (s *NodeAPIStruct) CandidateConnect(p0 context.Context, p1 *types.ConnectOptions) (error) {
 	if s.Internal.CandidateConnect == nil {
 		return ErrNotSupported
@@ -1384,6 +1403,17 @@ func (s *NodeAPIStruct) FreeUpDiskSpace(p0 context.Context, p1 string, p2 int64)
 
 func (s *NodeAPIStub) FreeUpDiskSpace(p0 context.Context, p1 string, p2 int64) (error) {
 	return ErrNotSupported
+}
+
+func (s *NodeAPIStruct) GenerateCandidateCode(p0 context.Context, p1 int, p2 types.NodeType) ([]string, error) {
+	if s.Internal.GenerateCandidateCode == nil {
+		return *new([]string), ErrNotSupported
+	}
+	return s.Internal.GenerateCandidateCode(p0, p1, p2)
+}
+
+func (s *NodeAPIStub) GenerateCandidateCode(p0 context.Context, p1 int, p2 types.NodeType) ([]string, error) {
+	return *new([]string), ErrNotSupported
 }
 
 func (s *NodeAPIStruct) GetAssetSourceDownloadInfo(p0 context.Context, p1 string) (*types.AssetSourceDownloadInfoRsp, error) {
@@ -1650,6 +1680,17 @@ func (s *NodeAPIStub) PerformSyncData(p0 context.Context, p1 string) (error) {
 	return ErrNotSupported
 }
 
+func (s *NodeAPIStruct) RegisterCandidateNode(p0 context.Context, p1 string, p2 string, p3 string) (*types.ActivationDetail, error) {
+	if s.Internal.RegisterCandidateNode == nil {
+		return nil, ErrNotSupported
+	}
+	return s.Internal.RegisterCandidateNode(p0, p1, p2, p3)
+}
+
+func (s *NodeAPIStub) RegisterCandidateNode(p0 context.Context, p1 string, p2 string, p3 string) (*types.ActivationDetail, error) {
+	return nil, ErrNotSupported
+}
+
 func (s *NodeAPIStruct) RegisterEdgeNode(p0 context.Context, p1 string, p2 string) (*types.ActivationDetail, error) {
 	if s.Internal.RegisterEdgeNode == nil {
 		return nil, ErrNotSupported
@@ -1713,6 +1754,17 @@ func (s *NodeAPIStruct) UpdateNetFlows(p0 context.Context, p1 int64, p2 int64, p
 }
 
 func (s *NodeAPIStub) UpdateNetFlows(p0 context.Context, p1 int64, p2 int64, p3 int64) (error) {
+	return ErrNotSupported
+}
+
+func (s *NodeAPIStruct) UpdateNodeDynamicInfo(p0 context.Context, p1 *types.NodeDynamicInfo) (error) {
+	if s.Internal.UpdateNodeDynamicInfo == nil {
+		return ErrNotSupported
+	}
+	return s.Internal.UpdateNodeDynamicInfo(p0, p1)
+}
+
+func (s *NodeAPIStub) UpdateNodeDynamicInfo(p0 context.Context, p1 *types.NodeDynamicInfo) (error) {
 	return ErrNotSupported
 }
 

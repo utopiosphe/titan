@@ -78,6 +78,8 @@ type NodeAPI interface {
 	RegisterNode(ctx context.Context, nodeID, publicKey string, nodeType types.NodeType) (*types.ActivationDetail, error) //perm:default
 	// RegisterEdgeNode adds new edge node to the scheduler
 	RegisterEdgeNode(ctx context.Context, nodeID, publicKey string) (*types.ActivationDetail, error) //perm:default
+	// RegisterCandidateNode adds new node to the scheduler
+	RegisterCandidateNode(ctx context.Context, nodeID, publicKey, code string) (*types.ActivationDetail, error) //perm:default
 	// DeactivateNode is used to deactivate a node in the titan server.
 	// It stops the node from serving any requests and marks it as inactive.
 	// - nodeID: The ID of the node to deactivate.
@@ -156,6 +158,12 @@ type NodeAPI interface {
 	GetProfitDetailsForNode(ctx context.Context, nodeID string, limit, offset int, ts []int) (*types.ListNodeProfitDetailsRsp, error) //perm:web,admin
 	// FreeUpDiskSpace  Request to free up disk space
 	FreeUpDiskSpace(ctx context.Context, nodeID string, size int64) error //perm:edge,candidate,web,locator
+	// UpdateNodeDynamicInfo
+	UpdateNodeDynamicInfo(ctx context.Context, info *types.NodeDynamicInfo) error //perm:admin
+	// GenerateCandidateCode
+	GenerateCandidateCode(ctx context.Context, count int, nodeType types.NodeType) ([]string, error) //perm:admin
+	// CandidateCodeExist
+	CandidateCodeExist(ctx context.Context, code string) (bool, error) //perm:admin,web,locator
 }
 
 // UserAPI is an interface for user

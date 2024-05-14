@@ -54,24 +54,31 @@ func (s *Scheduler) GetOnlineNodeCount(ctx context.Context, nodeType types.NodeT
 	return i, nil
 }
 
-// RegisterNode register node
-func (s *Scheduler) RegisterNode(ctx context.Context, nodeID, publicKey string, nodeType types.NodeType) (*types.ActivationDetail, error) {
+// RegisterCandidateNode register node
+func (s *Scheduler) RegisterCandidateNode(ctx context.Context, nodeID, publicKey, code string) (*types.ActivationDetail, error) {
 	remoteAddr := handler.GetRemoteAddr(ctx)
 	ip, _, err := net.SplitHostPort(remoteAddr)
 	if err != nil {
 		return nil, err
 	}
 
+	info, err := s.db.GetCandidateCodeInfo(code)
+	if err != nil {
+		return nil, err
+	}
+
+	if info.NodeID != "" {
+		return nil, xerrors.New("invalid code")
+	}
+
+	nodeType := info.NodeType
+
 	// check params
-	if nodeType != types.NodeEdge && nodeType != types.NodeCandidate && nodeType != types.NodeValidator {
+	if nodeType != types.NodeCandidate && nodeType != types.NodeValidator {
 		return nil, xerrors.New("invalid node type")
 	}
 
-	if nodeType == types.NodeEdge && !strings.HasPrefix(nodeID, "e_") {
-		return nil, xerrors.New("invalid edge node id")
-	}
-
-	if (nodeType == types.NodeCandidate || nodeType == types.NodeValidator) && !strings.HasPrefix(nodeID, "c_") {
+	if !strings.HasPrefix(nodeID, "c_") {
 		return nil, xerrors.New("invalid candidate node id")
 	}
 
@@ -92,6 +99,11 @@ func (s *Scheduler) RegisterNode(ctx context.Context, nodeID, publicKey string, 
 
 	if err = s.db.NodeExists(nodeID, nodeType); err == nil {
 		return nil, xerrors.Errorf("Node %s aready exist", nodeID)
+	}
+
+	err = s.db.UpdateCandidateCodeInfo(code, nodeID)
+	if err != nil {
+		return nil, xerrors.Errorf("UpdateCandidateCodeInfo %s err : %s", nodeID, err.Error())
 	}
 
 	if count, err := s.db.RegisterCount(ip); err != nil {
@@ -122,6 +134,62 @@ func (s *Scheduler) RegisterNode(ctx context.Context, nodeID, publicKey string, 
 		if err != nil {
 			log.Errorf("RegisterNode UpdateValidators %s err:%s", nodeID, err.Error())
 		}
+	}
+
+	return detail, nil
+}
+
+// RegisterNode register node
+func (s *Scheduler) RegisterNode(ctx context.Context, nodeID, publicKey string, nodeType types.NodeType) (*types.ActivationDetail, error) {
+	remoteAddr := handler.GetRemoteAddr(ctx)
+	ip, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	// check params
+	if nodeType != types.NodeEdge {
+		return nil, xerrors.New("invalid node type")
+	}
+
+	if !strings.HasPrefix(nodeID, "e_") {
+		return nil, xerrors.New("invalid edge node id")
+	}
+
+	if publicKey == "" {
+		return nil, xerrors.New("public key is nil")
+	}
+
+	_, err = titanrsa.Pem2PublicKey([]byte(publicKey))
+	if err != nil {
+		return nil, xerrors.Errorf("pem to publicKey err : %s", err.Error())
+	}
+
+	if err = s.db.NodeExists(nodeID, nodeType); err == nil {
+		return nil, xerrors.Errorf("Node %s aready exist", nodeID)
+	}
+
+	if count, err := s.db.RegisterCount(ip); err != nil {
+		return nil, xerrors.Errorf("RegisterCount %w", err)
+	} else if count >= s.SchedulerCfg.MaxNumberOfRegistrations &&
+		!isInIPWhitelist(ip, s.SchedulerCfg.IPWhitelist) {
+		return nil, xerrors.New("Registrations exceeded the number")
+	}
+
+	detail := &types.ActivationDetail{
+		NodeID:        nodeID,
+		AreaID:        s.SchedulerCfg.AreaID,
+		ActivationKey: newNodeKey(),
+		NodeType:      nodeType,
+		IP:            ip,
+	}
+
+	if err = s.db.SaveNodeRegisterInfos([]*types.ActivationDetail{detail}); err != nil {
+		return nil, xerrors.Errorf("SaveNodeRegisterInfos %w", err)
+	}
+
+	if err = s.db.SaveNodePublicKey(publicKey, nodeID); err != nil {
+		return nil, xerrors.Errorf("SaveNodePublicKey %w", err)
 	}
 
 	return detail, nil
@@ -1300,4 +1368,54 @@ func (s *Scheduler) FreeUpDiskSpace(ctx context.Context, nodeID string, size int
 	}
 
 	return nil
+}
+
+func (s *Scheduler) UpdateNodeDynamicInfo(ctx context.Context, info *types.NodeDynamicInfo) error {
+	node := s.NodeManager.GetNode(info.NodeID)
+	if node == nil {
+		return xerrors.Errorf("node %s is offline or not exist", info.NodeID)
+	}
+
+	if node.DownloadTraffic < info.DownloadTraffic {
+		node.DownloadTraffic += info.DownloadTraffic
+	}
+
+	if node.UploadTraffic < info.UploadTraffic {
+		node.UploadTraffic += info.UploadTraffic
+	}
+
+	return nil
+}
+
+func (s *Scheduler) GenerateCandidateCode(ctx context.Context, count int, nodeType types.NodeType) ([]string, error) {
+	infos := make([]*types.CandidateCodeInfo, 0)
+	out := make([]string, 0)
+	for i := 0; i < count; i++ {
+		code := generateRandomString(8)
+
+		infos = append(infos, &types.CandidateCodeInfo{Code: code, NodeType: nodeType, Expiration: time.Now().Add(time.Hour * 24)})
+		out = append(out, code)
+	}
+
+	return out, s.db.SaveCandidateCodeInfo(infos)
+}
+
+func (s *Scheduler) CandidateCodeExist(ctx context.Context, code string) (bool, error) {
+	info, err := s.db.GetCandidateCodeInfo(code)
+	if err != nil {
+		return false, err
+	}
+
+	return info.Code == code, nil
+}
+
+func generateRandomString(n int) string {
+	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+	b := make([]rune, n) //
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))] //
+	}
+
+	return string(b)
 }

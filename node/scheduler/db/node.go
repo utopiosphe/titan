@@ -885,3 +885,55 @@ func (n *SQLDB) CleanData() error {
 
 	return err
 }
+
+// SaveCandidateCodeInfo Insert Node code info
+func (n *SQLDB) SaveCandidateCodeInfo(infos []*types.CandidateCodeInfo) error {
+	tx, err := n.db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		err = tx.Rollback()
+		if err != nil && err != sql.ErrTxDone {
+			log.Errorf("Rollback err:%s", err.Error())
+		}
+	}()
+
+	for _, info := range infos {
+		query := fmt.Sprintf(
+			`INSERT INTO %s (code, expiration, node_type)
+				VALUES (:code, :expiration, :node_type)`, candidateCodeTable)
+
+		tx.NamedExec(query, info)
+	}
+
+	return tx.Commit()
+}
+
+// GetCandidateCodeInfo code info
+func (n *SQLDB) GetCandidateCodeInfo(code string) (*types.CandidateCodeInfo, error) {
+	query := fmt.Sprintf(`SELECT * FROM %s WHERE code=?`, candidateCodeTable)
+
+	var out types.CandidateCodeInfo
+	err := n.db.Get(&out, query, code)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}
+
+// UpdateCandidateCodeInfo code info
+func (n *SQLDB) UpdateCandidateCodeInfo(code, nodeID string) error {
+	query := fmt.Sprintf(`UPDATE %s SET node_id=? WHERE code=? AND node_id=''`, candidateCodeTable)
+	_, err := n.db.Exec(query, nodeID, code)
+	return err
+}
+
+// DeleteCandidateCodeInfo code info
+func (n *SQLDB) DeleteCandidateCodeInfo(code string) error {
+	query := fmt.Sprintf(`DELETE FROM %s WHERE code=?`, candidateCodeTable)
+	_, err := n.db.Exec(query, code)
+	return err
+}
