@@ -159,6 +159,11 @@ var daemonStartCmd = &cli.Command{
 			Name:  "node-type",
 			Usage: "--node-type=2, 2:candidate, 3:validator",
 		},
+		&cli.StringFlag{
+			Name:  "code",
+			Usage: "candidate register code",
+			Value: "",
+		},
 	},
 
 	Before: func(cctx *cli.Context) error {
@@ -178,6 +183,11 @@ var daemonStartCmd = &cli.Command{
 		r, err := repo.NewFS(repoPath)
 		if err != nil {
 			return err
+		}
+
+		code := cctx.String("code")
+		if len(code) == 0 {
+			return fmt.Errorf("--code can not empty")
 		}
 
 		ok, err := r.Exists()
@@ -208,7 +218,7 @@ var daemonStartCmd = &cli.Command{
 				return fmt.Errorf("Must set --node-type=2 or --node-type=3")
 			}
 
-			if err := lcli.RegitsterNode(lr, locatorURL, types.NodeType(nodeType)); err != nil {
+			if err := lcli.RegitsterNode(lr, locatorURL, types.NodeType(nodeType), code); err != nil {
 				return err
 			}
 		}
@@ -284,7 +294,7 @@ var daemonStartCmd = &cli.Command{
 		}
 		log.Infof("Remote version %s", v)
 
-		var shutdownChan = make(chan struct{})
+		shutdownChan := make(chan struct{})
 		var httpServer *httpserver.HttpServer
 		var candidateAPI api.Candidate
 		stop, err := node.New(cctx.Context,
@@ -478,7 +488,6 @@ var daemonStartCmd = &cli.Command{
 							} else if errNode.Code == int(terrors.NodeOffline) && readyCh == nil {
 								break
 							}
-
 						}
 					} else if curSession != schedulerSession {
 						log.Warn("change session id")

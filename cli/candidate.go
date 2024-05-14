@@ -35,6 +35,11 @@ var registerCmds = &cli.Command{
 			Name:  "node-type",
 			Usage: "--node-type=2, 2:candidate,3:validator",
 		},
+		&cli.StringFlag{
+			Name:  "code",
+			Usage: "candidate register code",
+			Value: "",
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		locatorURL := cctx.String("locator-url")
@@ -47,6 +52,11 @@ var registerCmds = &cli.Command{
 			return fmt.Errorf("--scheduler-url can not empty")
 		}
 
+		code := cctx.String("code")
+		if len(code) == 0 {
+			return fmt.Errorf("--code can not empty")
+		}
+
 		nodeType := cctx.Int("node-type")
 		if nodeType != int(types.NodeCandidate) && nodeType != int(types.NodeValidator) {
 			return fmt.Errorf("Must set --node-type=2 or --node-type=3")
@@ -57,6 +67,6 @@ var registerCmds = &cli.Command{
 		}
 		defer lr.Close() //nolint:errcheck  // ignore error
 
-		return RegisterNodeWithScheduler(lr, schedulerURL, locatorURL, types.NodeCandidate)
+		return RegisterNodeWithScheduler(lr, schedulerURL, locatorURL, types.NodeCandidate, code)
 	},
 }

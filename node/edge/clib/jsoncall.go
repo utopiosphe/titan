@@ -117,15 +117,17 @@ func errorResult(err error) *JSONCallResult {
 	return &result
 }
 
-type daemonStartFunc func(ctx context.Context, daemonSwitch *DaemonSwitch, repoPath, locatorURL string) error
-type CLib struct {
-	daemonStart daemonStartFunc
-	repoPath    string
-	isInit      bool
-	dSwitch     DaemonSwitch
+type (
+	daemonStartFunc func(ctx context.Context, daemonSwitch *DaemonSwitch, repoPath, locatorURL string) error
+	CLib            struct {
+		daemonStart daemonStartFunc
+		repoPath    string
+		isInit      bool
+		dSwitch     DaemonSwitch
 
-	downloader *Downloader
-}
+		downloader *Downloader
+	}
+)
 
 func NewCLib(daemonStart daemonStartFunc) *CLib {
 	return &CLib{daemonStart: daemonStart, downloader: newDownloader()}
@@ -343,7 +345,7 @@ func (clib *CLib) mergeConfig(jsonStr string) *JSONCallResult {
 
 		defer lr.Close()
 
-		if err := lcli.RegitsterNode(lr, newEdgeConfig.Network.LocatorURL, types.NodeEdge); err != nil {
+		if err := lcli.RegitsterNode(lr, newEdgeConfig.Network.LocatorURL, types.NodeEdge, ""); err != nil {
 			return &JSONCallResult{Code: -1, Msg: fmt.Sprintf("import private key error %s", err.Error())}
 		}
 

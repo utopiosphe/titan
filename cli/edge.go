@@ -732,7 +732,7 @@ func checkPath(path string) error {
 	return nil
 }
 
-func RegisterNodeWithScheduler(lr repo.LockedRepo, schedulerURL, locatorURL string, nodeType types.NodeType) error {
+func RegisterNodeWithScheduler(lr repo.LockedRepo, schedulerURL, locatorURL string, nodeType types.NodeType, code string) error {
 	schedulerAPI, closer, err := client.NewScheduler(context.Background(), schedulerURL, nil, jsonrpc.WithHTTPClient(client.NewHTTP3Client()))
 	if err != nil {
 		return err
@@ -748,17 +748,21 @@ func RegisterNodeWithScheduler(lr repo.LockedRepo, schedulerURL, locatorURL stri
 
 	pem := titanrsa.PublicKey2Pem(&privateKey.PublicKey)
 	var nodeID string
+	var info *types.ActivationDetail
 	if nodeType == types.NodeEdge {
 		nodeID = fmt.Sprintf("e_%s", uuid.NewString())
+		info, err = schedulerAPI.RegisterNode(context.Background(), nodeID, string(pem), nodeType)
+		if err != nil {
+			return err
+		}
 	} else if nodeType == types.NodeCandidate || nodeType == types.NodeValidator {
 		nodeID = fmt.Sprintf("c_%s", uuid.NewString())
+		info, err = schedulerAPI.RegisterCandidateNode(context.Background(), nodeID, string(pem), code)
+		if err != nil {
+			return err
+		}
 	} else {
 		return fmt.Errorf("RegisterNodeWithScheduler, invalid node type %s", nodeType.String())
-	}
-
-	info, err := schedulerAPI.RegisterNode(context.Background(), nodeID, string(pem), nodeType)
-	if err != nil {
-		return err
 	}
 
 	privatePem := titanrsa.PrivateKey2Pem(privateKey)
@@ -791,7 +795,7 @@ func RegisterNodeWithScheduler(lr repo.LockedRepo, schedulerURL, locatorURL stri
 	})
 }
 
-func RegitsterNode(lr repo.LockedRepo, locatorURL string, nodeType types.NodeType) error {
+func RegitsterNode(lr repo.LockedRepo, locatorURL string, nodeType types.NodeType, code string) error {
 	if nodeType != types.NodeEdge && nodeType != types.NodeCandidate && nodeType != types.NodeValidator {
 		return fmt.Errorf("RegitsterNode, invalid node type %s %d", nodeType.String(), nodeType)
 	}
@@ -808,7 +812,7 @@ func RegitsterNode(lr repo.LockedRepo, locatorURL string, nodeType types.NodeTyp
 		return err
 	}
 
-	return RegisterNodeWithScheduler(lr, schedulerURL, locatorURL, nodeType)
+	return RegisterNodeWithScheduler(lr, schedulerURL, locatorURL, nodeType, code)
 }
 
 func allocateSchedulerForNode(locatorURL string, nodeType types.NodeType) (string, error) {

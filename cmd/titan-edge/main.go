@@ -448,7 +448,6 @@ func heartbeat(ctx context.Context, hbp heartbeatParams) error {
 
 		log.Errorf("TITAN-EDGE CONNECTION LOST")
 	}
-
 }
 
 func daemonStart(ctx context.Context, daemonSwitch *clib.DaemonSwitch, repoPath, locatorURL string) error {
@@ -478,7 +477,7 @@ func daemonStart(ctx context.Context, daemonSwitch *clib.DaemonSwitch, repoPath,
 		if len(locatorURL) == 0 {
 			return fmt.Errorf("Must set --url")
 		}
-		if err := lcli.RegitsterNode(lr, locatorURL, types.NodeEdge); err != nil {
+		if err := lcli.RegitsterNode(lr, locatorURL, types.NodeEdge, ""); err != nil {
 			return err
 		}
 	}
@@ -547,7 +546,7 @@ func daemonStart(ctx context.Context, daemonSwitch *clib.DaemonSwitch, repoPath,
 	}
 	log.Infof("Remote version %s", v)
 
-	var shutdownChan = make(chan struct{})
+	shutdownChan := make(chan struct{})
 	var lockRepo repo.LockedRepo
 	var httpServer *httpserver.HttpServer
 	var edgeAPI api.Edge
@@ -571,7 +570,7 @@ func daemonStart(ctx context.Context, daemonSwitch *clib.DaemonSwitch, repoPath,
 			return dtypes.NodeMetadataPath(metadataPath)
 		}),
 		node.Override(new(dtypes.AssetsPaths), func() dtypes.AssetsPaths {
-			var assetsPaths = []string{path.Join(lr.Path(), DefaultStorageDir)}
+			assetsPaths := []string{path.Join(lr.Path(), DefaultStorageDir)}
 			if len(edgeCfg.Storage.Path) > 0 {
 				assetsPaths = []string{edgeCfg.Storage.Path}
 			}
@@ -655,7 +654,6 @@ func daemonStart(ctx context.Context, daemonSwitch *clib.DaemonSwitch, repoPath,
 				cancel()
 			}
 		}
-
 	}()
 
 	nl, err := net.Listen("tcp", edgeCfg.Network.ListenAddress)
