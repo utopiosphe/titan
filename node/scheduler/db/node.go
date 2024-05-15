@@ -939,7 +939,16 @@ func (n *SQLDB) GetCandidateCodeInfo(code string) (*types.CandidateCodeInfo, err
 // UpdateCandidateCodeInfo code info
 func (n *SQLDB) UpdateCandidateCodeInfo(code, nodeID string) error {
 	query := fmt.Sprintf(`UPDATE %s SET node_id=? WHERE code=? AND node_id=''`, candidateCodeTable)
-	_, err := n.db.Exec(query, nodeID, code)
+	result, err := n.db.Exec(query, nodeID, code)
+	if err != nil {
+		return err
+	}
+
+	r, err := result.RowsAffected()
+	if r < 1 {
+		return xerrors.New("nothing to update")
+	}
+
 	return err
 }
 
