@@ -14,7 +14,7 @@ const (
 	mr = 1.0
 	mo = 1.0
 
-	phoneWeighting = 1.0
+	phoneWeighting = 5.0
 )
 
 var (
