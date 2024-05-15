@@ -1022,6 +1022,12 @@ func (m *Manager) getDownloadSources(hash, bucket string, assetSource AssetSourc
 	sources := make([]*types.CandidateDownloadInfo, 0)
 	cSources := make([]*types.CandidateDownloadInfo, 0)
 
+	if assetSource == AssetSourceAWS {
+		sources = append(sources, &types.CandidateDownloadInfo{AWSBucket: bucket, NodeID: types.DownloadSourceAWS.String()})
+	} else if assetSource == AssetSourceIPFS {
+		sources = append(sources, &types.CandidateDownloadInfo{NodeID: types.DownloadSourceIPFS.String()})
+	}
+
 	for _, replica := range replicaInfos {
 		nodeID := replica.NodeID
 		cNode := m.nodeMgr.GetNode(nodeID)
@@ -1063,12 +1069,6 @@ func (m *Manager) getDownloadSources(hash, bucket string, assetSource AssetSourc
 		}
 
 		sources = append(sources, source)
-	}
-
-	if assetSource == AssetSourceAWS {
-		sources = append(sources, &types.CandidateDownloadInfo{AWSBucket: bucket, NodeID: types.DownloadSourceAWS.String()})
-	} else if assetSource == AssetSourceIPFS {
-		sources = append(sources, &types.CandidateDownloadInfo{NodeID: types.DownloadSourceIPFS.String()})
 	}
 
 	if len(sources) < 1 {

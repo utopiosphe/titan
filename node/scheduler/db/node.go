@@ -877,19 +877,19 @@ func (n *SQLDB) UpdateNodeProfit(sIDs []string, profit float64) error {
 
 // CleanData delete events
 func (n *SQLDB) CleanData() error {
-	query := fmt.Sprintf(`DELETE FROM %s WHERE end_time<DATE_SUB(NOW(), INTERVAL 5 DAY) `, replicaEventTable)
+	query := fmt.Sprintf(`DELETE FROM %s WHERE end_time<DATE_SUB(NOW(), INTERVAL 10 DAY) `, replicaEventTable)
 	_, err := n.db.Exec(query)
 	if err != nil {
 		return err
 	}
 
-	query = fmt.Sprintf(`DELETE FROM %s WHERE end_time<DATE_SUB(NOW(), INTERVAL 10 DAY) `, retrieveEventTable)
+	query = fmt.Sprintf(`DELETE FROM %s WHERE end_time<DATE_SUB(NOW(), INTERVAL 30 DAY) `, retrieveEventTable)
 	_, err = n.db.Exec(query)
 	if err != nil {
 		return err
 	}
 
-	query = fmt.Sprintf(`DELETE FROM %s WHERE client_end_time<DATE_SUB(NOW(), INTERVAL 3 DAY) `, workloadRecordTable)
+	query = fmt.Sprintf(`DELETE FROM %s WHERE client_end_time<DATE_SUB(NOW(), INTERVAL 10 DAY) `, workloadRecordTable)
 	_, err = n.db.Exec(query)
 	if err != nil {
 		return err
