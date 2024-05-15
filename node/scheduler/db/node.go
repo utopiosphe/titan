@@ -542,9 +542,18 @@ func (n *SQLDB) SaveWorkloadRecord(records []*types.WorkloadRecord) error {
 }
 
 // UpdateWorkloadRecord update workload record
-func (n *SQLDB) UpdateWorkloadRecord(record *types.WorkloadRecord) error {
-	query := fmt.Sprintf(`UPDATE %s SET workloads=:workloads, client_end_time=NOW(), status=:status WHERE workload_id=:workload_id`, workloadRecordTable)
-	_, err := n.db.NamedExec(query, record)
+func (n *SQLDB) UpdateWorkloadRecord(record *types.WorkloadRecord, status types.WorkloadStatus) error {
+	query := fmt.Sprintf(`UPDATE %s SET workloads=?, client_end_time=NOW(), status=? WHERE workload_id=? AND status=?`, workloadRecordTable)
+	result, err := n.db.Exec(query, record.Workloads, record.Status, record.WorkloadID, status)
+	if err != nil {
+		return err
+	}
+
+	r, err := result.RowsAffected()
+	if r < 1 {
+		return xerrors.New("nothing to update")
+	}
+
 	return err
 }
 

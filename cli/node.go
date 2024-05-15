@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"os"
 	"strconv"
@@ -36,6 +38,7 @@ var nodeCmds = &cli.Command{
 		freeUpDiskSpaceCmd,
 		updateNodeDynamicInfoCmd,
 		generateCandidateCodeCmd,
+		loadWorkloadCmd,
 	},
 }
 
@@ -127,6 +130,57 @@ var updateNodeDynamicInfoCmd = &cli.Command{
 
 		return nil
 		// return schedulerAPI.UpdateNodeDynamicInfo(ctx, &types.NodeDynamicInfo{NodeID: nodeID, DownloadTraffic: dt, UploadTraffic: ut})
+	},
+}
+
+var loadWorkloadCmd = &cli.Command{
+	Name:  "workload",
+	Usage: "load work load",
+	Flags: []cli.Flag{
+		nodeIDFlag,
+		limitFlag,
+		offsetFlag,
+		cidFlag,
+	},
+	Action: func(cctx *cli.Context) error {
+		nodeID := cctx.String("node-id")
+		limit := cctx.Int("limit")
+		offset := cctx.Int("offset")
+		cid := cctx.String("cid")
+
+		ctx := ReqContext(cctx)
+		schedulerAPI, closer, err := GetSchedulerAPI(cctx, "")
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		rsp, err := schedulerAPI.GetWorkloadRecords(ctx, nodeID, limit, offset)
+		if err != nil {
+			return err
+		}
+
+		for _, info := range rsp.WorkloadRecordInfos {
+			if info.WorkloadID != cid {
+				continue
+			}
+
+			fmt.Println("find---------- ", info.AssetCID)
+
+			ws := make([]*types.Workload, 0)
+			dec := gob.NewDecoder(bytes.NewBuffer(info.Workloads))
+			err = dec.Decode(&ws)
+			if err != nil {
+				log.Errorf("decode data to []*types.Workload error: %s", err.Error())
+				return err
+			}
+
+			for _, w := range ws {
+				fmt.Println(w.SourceID)
+			}
+		}
+
+		return nil
 	},
 }
 

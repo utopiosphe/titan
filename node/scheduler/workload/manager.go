@@ -3,6 +3,7 @@ package workload
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"time"
 
 	"github.com/Filecoin-Titan/titan/api/types"
@@ -118,7 +119,7 @@ func (m *Manager) handleUserWorkload(data *types.WorkloadRecordReq) error {
 
 	// update status
 	record.Status = types.WorkloadStatusSucceeded
-	err = m.UpdateWorkloadRecord(record)
+	err = m.UpdateWorkloadRecord(record, types.WorkloadStatusCreate)
 	if err != nil {
 		log.Errorf("handleUserWorkload UpdateWorkloadRecord error: %s", err.Error())
 		return err
@@ -157,6 +158,7 @@ func (m *Manager) handleUserWorkload(data *types.WorkloadRecordReq) error {
 			dInfo := m.nodeMgr.GetNodeBePullProfitDetails(node, float64(dw.DownloadSize), "")
 			if dInfo != nil {
 				dInfo.CID = retrieveEvent.CID
+				dInfo.Note = fmt.Sprintf("%s,%s", dInfo.Note, record.WorkloadID)
 
 				detailsList = append(detailsList, dInfo)
 			}
@@ -253,7 +255,7 @@ func (m *Manager) handleNodeWorkload(data *types.WorkloadRecordReq, nodeID strin
 
 	// update status
 	record.Status = types.WorkloadStatusSucceeded
-	err = m.UpdateWorkloadRecord(record)
+	err = m.UpdateWorkloadRecord(record, types.WorkloadStatusCreate)
 	if err != nil {
 		log.Errorf("handleNodeWorkload UpdateWorkloadRecord error: %s", err.Error())
 		return err
@@ -299,6 +301,7 @@ func (m *Manager) handleNodeWorkload(data *types.WorkloadRecordReq, nodeID strin
 			dInfo := m.nodeMgr.GetNodeBePullProfitDetails(node, float64(dw.DownloadSize), "")
 			if dInfo != nil {
 				dInfo.CID = retrieveEvent.CID
+				dInfo.Note = fmt.Sprintf("%s,%s", dInfo.Note, record.WorkloadID)
 
 				detailsList = append(detailsList, dInfo)
 			}
