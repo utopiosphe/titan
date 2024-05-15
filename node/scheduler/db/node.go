@@ -227,6 +227,14 @@ func (n *SQLDB) SaveNodeInfo(info *types.NodeInfo) error {
 }
 
 // UpdateNodeDynamicInfo update node online time , last time , disk usage ...
+func (n *SQLDB) UpdateNodeDynamicInfo2(nodeID string, down, up int64) error {
+	query := fmt.Sprintf(`UPDATE %s SET download_traffic=download_traffic+?,upload_traffic=upload_traffic+? WHERE node_id=? `, nodeInfoTable)
+	_, err := n.db.Exec(query, down, up, nodeID)
+
+	return err
+}
+
+// UpdateNodeDynamicInfo update node online time , last time , disk usage ...
 func (n *SQLDB) UpdateNodeDynamicInfo(infos []*types.NodeDynamicInfo) ([]string, error) {
 	errorList := make([]string, 0)
 
@@ -721,6 +729,10 @@ func (n *SQLDB) LoadRetrieveEventRecords(nodeID string, limit, offset int) (*typ
 }
 
 func (n *SQLDB) AddNodeProfit(profitInfo *types.ProfitDetails) error {
+	if profitInfo == nil {
+		return nil
+	}
+
 	tx, err := n.db.Beginx()
 	if err != nil {
 		return err
@@ -874,13 +886,13 @@ func (n *SQLDB) CleanData() error {
 		return err
 	}
 
-	query = fmt.Sprintf(`DELETE FROM %s WHERE start_time<DATE_SUB(NOW(), INTERVAL 20 DAY) `, validationResultTable)
+	query = fmt.Sprintf(`DELETE FROM %s WHERE start_time<DATE_SUB(NOW(), INTERVAL 30 DAY) `, validationResultTable)
 	_, err = n.db.Exec(query)
 	if err != nil {
 		return err
 	}
 
-	query = fmt.Sprintf(`DELETE FROM %s WHERE created_time<DATE_SUB(NOW(), INTERVAL 20 DAY) `, profitDetailsTable)
+	query = fmt.Sprintf(`DELETE FROM %s WHERE created_time<DATE_SUB(NOW(), INTERVAL 30 DAY) `, profitDetailsTable)
 	_, err = n.db.Exec(query)
 
 	return err

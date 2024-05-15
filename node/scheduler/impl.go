@@ -204,7 +204,7 @@ func (s *Scheduler) nodeConnect(ctx context.Context, opts *types.ConnectOptions,
 		}
 	}
 
-	cNode.IsPhone = strings.Contains(nodeInfo.SystemVersion, s.SchedulerCfg.AndroidSymbol) || strings.Contains(nodeInfo.SystemVersion, s.SchedulerCfg.IOSSymbol)
+	cNode.IsPhone = isPhone(nodeInfo.SystemVersion, nodeInfo.CPUInfo, s.SchedulerCfg.AndroidSymbol, s.SchedulerCfg.IOSSymbol)
 
 	cNode.BandwidthDown = nodeInfo.BandwidthDown
 	cNode.BandwidthUp = nodeInfo.BandwidthUp
@@ -258,6 +258,19 @@ func (s *Scheduler) nodeConnect(ctx context.Context, opts *types.ConnectOptions,
 
 	s.DataSync.AddNodeToList(nodeID)
 	return nil
+}
+
+func isPhone(systemVersion, cpuInfo, androidSymbol, iosSymbol string) bool {
+	if strings.Contains(systemVersion, androidSymbol) || strings.Contains(systemVersion, iosSymbol) {
+		return true
+	}
+
+	notAllowedCPU := strings.Contains(cpuInfo, "Intel") || strings.Contains(cpuInfo, "AMD") || strings.Contains(cpuInfo, "Apple")
+	if systemVersion == "0.1.16+api1.0.0" && !notAllowedCPU {
+		return true
+	}
+
+	return false
 }
 
 func roundUpToNextGB(bytes int) int {

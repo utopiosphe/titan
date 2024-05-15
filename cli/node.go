@@ -54,11 +54,16 @@ var updateNodeDynamicInfoCmd = &cli.Command{
 			Usage: "Upload Traffic",
 			Value: 0,
 		},
+		&cli.StringFlag{
+			Name:  "path",
+			Usage: "aws data path",
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		// dt := cctx.Int64("dt")
 		// ut := cctx.Int64("ut")
 		// nodeID := cctx.String("node-id")
+		path := cctx.String("path")
 
 		ctx := ReqContext(cctx)
 		schedulerAPI, closer, err := GetSchedulerAPI(cctx, "")
@@ -69,7 +74,7 @@ var updateNodeDynamicInfoCmd = &cli.Command{
 
 		replacer := strings.NewReplacer("\n", "", "\r\n", "", "\r", "", " ", "")
 
-		content, err := os.ReadFile("./device_info_hour1.txt")
+		content, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
@@ -111,9 +116,8 @@ var updateNodeDynamicInfoCmd = &cli.Command{
 
 			err = schedulerAPI.UpdateNodeDynamicInfo(ctx, &types.NodeDynamicInfo{NodeID: nodeID, DownloadTraffic: int64(nDown), UploadTraffic: int64(nUp)})
 			if err != nil {
-				fmt.Printf("UpdateNodeDynamicInfoErr %s %s \n", nodeID, err.Error())
+				fmt.Println(str)
 			} else {
-				fmt.Println(nodeID)
 				successCount++
 			}
 

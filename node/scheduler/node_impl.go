@@ -1373,7 +1373,7 @@ func (s *Scheduler) FreeUpDiskSpace(ctx context.Context, nodeID string, size int
 func (s *Scheduler) UpdateNodeDynamicInfo(ctx context.Context, info *types.NodeDynamicInfo) error {
 	node := s.NodeManager.GetNode(info.NodeID)
 	if node == nil {
-		return xerrors.Errorf("node %s is offline or not exist", info.NodeID)
+		return s.db.UpdateNodeDynamicInfo2(info.NodeID, info.DownloadTraffic, info.UploadTraffic)
 	}
 
 	if node.DownloadTraffic < info.DownloadTraffic {
