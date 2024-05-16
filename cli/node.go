@@ -206,7 +206,8 @@ var freeUpDiskSpaceCmd = &cli.Command{
 		}
 		defer closer()
 
-		return schedulerAPI.FreeUpDiskSpace(ctx, nodeID, size)
+		_, err = schedulerAPI.FreeUpDiskSpace(ctx, nodeID, size)
+		return err
 	},
 }
 

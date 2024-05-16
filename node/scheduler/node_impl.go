@@ -1306,38 +1306,38 @@ func (s *Scheduler) GetProfitDetailsForNode(ctx context.Context, nodeID string, 
 }
 
 // FreeUpDiskSpace Request to free up disk space
-func (s *Scheduler) FreeUpDiskSpace(ctx context.Context, nodeID string, size int64) error {
+func (s *Scheduler) FreeUpDiskSpace(ctx context.Context, nodeID string, size int64) ([]string, error) {
 	nID := handler.GetNodeID(ctx)
 	if nID != "" {
 		nodeID = nID
 	}
 
 	if size <= 0 {
-		return xerrors.Errorf("size is %d", size)
+		return nil, xerrors.Errorf("size is %d", size)
 	}
 
 	// limit
 	t, err := s.db.LoadFreeUpDiskTime(nodeID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	day := 5
 	now := time.Now()
 	fiveDaysAgo := now.AddDate(0, 0, -day)
 	if !t.Before(fiveDaysAgo) {
-		return xerrors.Errorf("Less than %d days have passed since the last release", day)
+		return nil, xerrors.Errorf("Less than %d days have passed since the last release", day)
 	}
 
 	// todo
 	hashes, err := s.db.LoadAllHashesOfNode(nodeID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = s.db.SaveFreeUpDiskTime(nodeID, now)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	removeList := make([]string, 0)
@@ -1367,7 +1367,7 @@ func (s *Scheduler) FreeUpDiskSpace(ctx context.Context, nodeID string, size int
 		log.Errorf("FreeUpDiskSpace %s SaveReplenishBackup err:%s", nodeID, err.Error())
 	}
 
-	return nil
+	return removeList, nil
 }
 
 func (s *Scheduler) UpdateNodeDynamicInfo(ctx context.Context, info *types.NodeDynamicInfo) error {

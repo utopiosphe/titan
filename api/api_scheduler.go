@@ -157,7 +157,7 @@ type NodeAPI interface {
 	// GetProfitDetailsForNode retrieves a profit list of node
 	GetProfitDetailsForNode(ctx context.Context, nodeID string, limit, offset int, ts []int) (*types.ListNodeProfitDetailsRsp, error) //perm:web,admin
 	// FreeUpDiskSpace  Request to free up disk space
-	FreeUpDiskSpace(ctx context.Context, nodeID string, size int64) error //perm:edge,candidate,web,locator
+	FreeUpDiskSpace(ctx context.Context, nodeID string, size int64) ([]string, error) //perm:edge,candidate,admin
 	// UpdateNodeDynamicInfo
 	UpdateNodeDynamicInfo(ctx context.Context, info *types.NodeDynamicInfo) error //perm:admin
 	// GenerateCandidateCode
