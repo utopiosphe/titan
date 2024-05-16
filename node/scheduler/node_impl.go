@@ -1401,6 +1401,19 @@ func (s *Scheduler) GenerateCandidateCode(ctx context.Context, count int, nodeTy
 	return out, s.db.SaveCandidateCodeInfo(infos)
 }
 
+func (s *Scheduler) GetCandidateCodeInfos(ctx context.Context, nodeID string) ([]*types.CandidateCodeInfo, error) {
+	if nodeID != "" {
+		info, err := s.db.GetCandidateCodeInfoForNodeID(nodeID)
+		if err != nil {
+			return nil, err
+		}
+
+		return []*types.CandidateCodeInfo{info}, nil
+	}
+
+	return s.db.GetCandidateCodeInfos()
+}
+
 func (s *Scheduler) CandidateCodeExist(ctx context.Context, code string) (bool, error) {
 	info, err := s.db.GetCandidateCodeInfo(code)
 	if err != nil {

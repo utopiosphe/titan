@@ -24,6 +24,7 @@ var SchedulerCMDs = []*cli.Command{
 	edgeUpdaterCmd,
 	electValidatorsCmd,
 	loadWorkloadCmd,
+	loadCandidateCodeCmd,
 }
 
 var (
@@ -129,6 +130,35 @@ var loadWorkloadCmd = &cli.Command{
 
 		for _, w := range ws {
 			fmt.Println(w.SourceID)
+		}
+
+		return nil
+	},
+}
+
+var loadCandidateCodeCmd = &cli.Command{
+	Name:  "codes",
+	Usage: "load candidate code info",
+	Flags: []cli.Flag{
+		nodeIDFlag,
+	},
+	Action: func(cctx *cli.Context) error {
+		nodeID := cctx.String("node-id")
+
+		ctx := ReqContext(cctx)
+		schedulerAPI, closer, err := GetSchedulerAPI(cctx, "")
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		infos, err := schedulerAPI.GetCandidateCodeInfos(ctx, nodeID)
+		if err != nil {
+			return err
+		}
+
+		for _, info := range infos {
+			fmt.Printf("code:%s node:%s type:%s\n", info.Code, info.NodeID, info.NodeType.String())
 		}
 
 		return nil

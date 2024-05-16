@@ -164,6 +164,8 @@ type NodeAPI interface {
 	GenerateCandidateCode(ctx context.Context, count int, nodeType types.NodeType) ([]string, error) //perm:admin
 	// CandidateCodeExist
 	CandidateCodeExist(ctx context.Context, code string) (bool, error) //perm:admin,web,locator
+	// GetCandidateCodeInfos
+	GetCandidateCodeInfos(ctx context.Context, nodeID string) ([]*types.CandidateCodeInfo, error) //perm:admin,web,locator
 }
 
 // UserAPI is an interface for user

@@ -320,6 +320,8 @@ type NodeAPIStruct struct {
 
 		GetAssetsInBucket func(p0 context.Context, p1 string, p2 int, p3 bool) ([]string, error) `perm:"admin"`
 
+		GetCandidateCodeInfos func(p0 context.Context, p1 string) ([]*types.CandidateCodeInfo, error) `perm:"admin,web,locator"`
+
 		GetCandidateDownloadInfos func(p0 context.Context, p1 string) ([]*types.CandidateDownloadInfo, error) `perm:"edge,candidate,web,locator"`
 
 		GetCandidateIPs func(p0 context.Context) ([]*types.NodeIPInfo, error) `perm:"web,user,admin"`
@@ -1449,6 +1451,17 @@ func (s *NodeAPIStruct) GetAssetsInBucket(p0 context.Context, p1 string, p2 int,
 
 func (s *NodeAPIStub) GetAssetsInBucket(p0 context.Context, p1 string, p2 int, p3 bool) ([]string, error) {
 	return *new([]string), ErrNotSupported
+}
+
+func (s *NodeAPIStruct) GetCandidateCodeInfos(p0 context.Context, p1 string) ([]*types.CandidateCodeInfo, error) {
+	if s.Internal.GetCandidateCodeInfos == nil {
+		return *new([]*types.CandidateCodeInfo), ErrNotSupported
+	}
+	return s.Internal.GetCandidateCodeInfos(p0, p1)
+}
+
+func (s *NodeAPIStub) GetCandidateCodeInfos(p0 context.Context, p1 string) ([]*types.CandidateCodeInfo, error) {
+	return *new([]*types.CandidateCodeInfo), ErrNotSupported
 }
 
 func (s *NodeAPIStruct) GetCandidateDownloadInfos(p0 context.Context, p1 string) ([]*types.CandidateDownloadInfo, error) {

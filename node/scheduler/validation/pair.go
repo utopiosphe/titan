@@ -121,18 +121,20 @@ func (m *Manager) resetGroup() {
 		case types.NodeEdge, types.NodeCandidate:
 			m.unpairedGroup.addNode(node.NodeID, node.BandwidthUp)
 		case types.NodeValidator:
-			bwDn := float64(node.BandwidthDown)
-			count := int(math.Floor((bwDn * bandwidthRatio) / m.validatorBaseBwDn))
-			if count < 1 {
-				count = 1
-			}
+			if node.NATType == types.NatTypeNo {
+				bwDn := float64(node.BandwidthDown)
+				count := int(math.Floor((bwDn * bandwidthRatio) / m.validatorBaseBwDn))
+				if count < 1 {
+					count = 1
+				}
 
-			for i := 0; i < count; i++ {
-				vr := newVWindow(node.NodeID)
-				m.vWindows = append(m.vWindows, vr)
+				for i := 0; i < count; i++ {
+					vr := newVWindow(node.NodeID)
+					m.vWindows = append(m.vWindows, vr)
 
-				bg := newValidatableGroup()
-				m.validatableGroups = append(m.validatableGroups, bg)
+					bg := newValidatableGroup()
+					m.validatableGroups = append(m.validatableGroups, bg)
+				}
 			}
 
 			if m.nodeMgr.GetEdgeNode(node.NodeID) != nil {

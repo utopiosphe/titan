@@ -770,6 +770,17 @@ func (n *SQLDB) AddNodeProfit(profitInfo *types.ProfitDetails) error {
 	return tx.Commit()
 }
 
+func (n *SQLDB) LoadTodayProfitsForNode(nodeID string, startTime, endTime time.Time) (float64, error) {
+	size := 0.0
+	query := fmt.Sprintf("SELECT sum(profit) FROM %s WHERE node_id=? AND created_time BETWEEN ? AND ? ", profitDetailsTable)
+	err := n.db.Get(&size, query, nodeID, startTime, endTime)
+	if err != nil {
+		return 0, err
+	}
+
+	return size, nil
+}
+
 // LoadNodeProfits load profit info.
 func (n *SQLDB) LoadNodeProfits(nodeID string, limit, offset int, ts []int) (*types.ListNodeProfitDetailsRsp, error) {
 	res := new(types.ListNodeProfitDetailsRsp)
@@ -936,7 +947,7 @@ func (n *SQLDB) SaveCandidateCodeInfo(infos []*types.CandidateCodeInfo) error {
 // GetCandidateCodeInfos code info
 func (n *SQLDB) GetCandidateCodeInfos() ([]*types.CandidateCodeInfo, error) {
 	var infos []*types.CandidateCodeInfo
-	query := fmt.Sprintf("SELECT * FROM %s WHERE ", candidateCodeTable)
+	query := fmt.Sprintf("SELECT * FROM %s ", candidateCodeTable)
 
 	err := n.db.Select(&infos, query)
 	if err != nil {
@@ -944,6 +955,19 @@ func (n *SQLDB) GetCandidateCodeInfos() ([]*types.CandidateCodeInfo, error) {
 	}
 
 	return infos, nil
+}
+
+// GetCandidateCodeInfoForNodeID code info
+func (n *SQLDB) GetCandidateCodeInfoForNodeID(nodeID string) (*types.CandidateCodeInfo, error) {
+	query := fmt.Sprintf(`SELECT * FROM %s WHERE node_id=?`, candidateCodeTable)
+
+	var out types.CandidateCodeInfo
+	err := n.db.Get(&out, query, nodeID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
 }
 
 // GetCandidateCodeInfo code info
