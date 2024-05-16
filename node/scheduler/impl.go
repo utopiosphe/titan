@@ -511,3 +511,19 @@ func (s *Scheduler) AddProfits(ctx context.Context, nodes []string, profit float
 func (s *Scheduler) UpdateNetFlows(ctx context.Context, total, up, down int64) error {
 	return nil
 }
+
+func (s *Scheduler) ReDetermineNodeNATType(ctx context.Context, nodeID string) error {
+	node := s.NodeManager.GetCandidateNode(nodeID)
+	if node != nil {
+		go s.NatManager.DetermineCandidateNATType(ctx, nodeID)
+		return nil
+	}
+
+	node = s.NodeManager.GetEdgeNode(nodeID)
+	if node != nil {
+		go s.NatManager.DetermineCandidateNATType(ctx, nodeID)
+		return nil
+	}
+
+	return nil
+}

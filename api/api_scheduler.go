@@ -166,6 +166,8 @@ type NodeAPI interface {
 	CandidateCodeExist(ctx context.Context, code string) (bool, error) //perm:admin,web,locator
 	// GetCandidateCodeInfos
 	GetCandidateCodeInfos(ctx context.Context, nodeID string) ([]*types.CandidateCodeInfo, error) //perm:admin,web,locator
+	// ReDetermineNodeNATType
+	ReDetermineNodeNATType(ctx context.Context, nodeID string) error //perm:admin,web,locator
 }
 
 // UserAPI is an interface for user

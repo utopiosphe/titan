@@ -772,7 +772,7 @@ func (n *SQLDB) AddNodeProfit(profitInfo *types.ProfitDetails) error {
 
 func (n *SQLDB) LoadTodayProfitsForNode(nodeID string, startTime, endTime time.Time) (float64, error) {
 	size := 0.0
-	query := fmt.Sprintf("SELECT sum(profit) FROM %s WHERE node_id=? AND created_time BETWEEN ? AND ? ", profitDetailsTable)
+	query := fmt.Sprintf("SELECT COALESCE(SUM(profit), 0) FROM %s WHERE node_id=? AND created_time BETWEEN ? AND ? ", profitDetailsTable)
 	err := n.db.Get(&size, query, nodeID, startTime, endTime)
 	if err != nil {
 		return 0, err

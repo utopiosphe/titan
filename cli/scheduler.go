@@ -25,6 +25,7 @@ var SchedulerCMDs = []*cli.Command{
 	electValidatorsCmd,
 	loadWorkloadCmd,
 	loadCandidateCodeCmd,
+	reNatCmd,
 }
 
 var (
@@ -189,6 +190,31 @@ var setNodePortCmd = &cli.Command{
 		defer closer()
 
 		return schedulerAPI.UpdateNodePort(ctx, nodeID, port)
+	},
+}
+
+var reNatCmd = &cli.Command{
+	Name:  "rn",
+	Usage: "re determine node nat type",
+	Flags: []cli.Flag{
+		nodeIDFlag,
+	},
+
+	Before: func(cctx *cli.Context) error {
+		return nil
+	},
+	Action: func(cctx *cli.Context) error {
+		nodeID := cctx.String("node-id")
+
+		ctx := ReqContext(cctx)
+
+		schedulerAPI, closer, err := GetSchedulerAPI(cctx, "")
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		return schedulerAPI.ReDetermineNodeNATType(ctx, nodeID)
 	},
 }
 

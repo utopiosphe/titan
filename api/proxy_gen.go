@@ -364,6 +364,8 @@ type NodeAPIStruct struct {
 
 		PerformSyncData func(p0 context.Context, p1 string) (error) `perm:"admin"`
 
+		ReDetermineNodeNATType func(p0 context.Context, p1 string) (error) `perm:"admin,web,locator"`
+
 		RegisterCandidateNode func(p0 context.Context, p1 string, p2 string, p3 string) (*types.ActivationDetail, error) `perm:"default"`
 
 		RegisterEdgeNode func(p0 context.Context, p1 string, p2 string) (*types.ActivationDetail, error) `perm:"default"`
@@ -1692,6 +1694,17 @@ func (s *NodeAPIStruct) PerformSyncData(p0 context.Context, p1 string) (error) {
 }
 
 func (s *NodeAPIStub) PerformSyncData(p0 context.Context, p1 string) (error) {
+	return ErrNotSupported
+}
+
+func (s *NodeAPIStruct) ReDetermineNodeNATType(p0 context.Context, p1 string) (error) {
+	if s.Internal.ReDetermineNodeNATType == nil {
+		return ErrNotSupported
+	}
+	return s.Internal.ReDetermineNodeNATType(p0, p1)
+}
+
+func (s *NodeAPIStub) ReDetermineNodeNATType(p0 context.Context, p1 string) (error) {
 	return ErrNotSupported
 }
 
