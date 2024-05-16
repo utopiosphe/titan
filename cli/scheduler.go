@@ -1,11 +1,14 @@
 package cli
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/Filecoin-Titan/titan/api"
+	"github.com/Filecoin-Titan/titan/api/types"
 	"github.com/Filecoin-Titan/titan/node/config"
 	"github.com/urfave/cli/v2"
 )
@@ -20,6 +23,7 @@ var SchedulerCMDs = []*cli.Command{
 	// other
 	edgeUpdaterCmd,
 	electValidatorsCmd,
+	loadWorkloadCmd,
 }
 
 var (
@@ -87,6 +91,49 @@ var (
 		Value: 0,
 	}
 )
+
+var loadWorkloadCmd = &cli.Command{
+	Name:  "workload",
+	Usage: "load work load",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:  "id",
+			Usage: "specify the cid of a asset",
+			Value: "",
+		},
+	},
+	Action: func(cctx *cli.Context) error {
+		id := cctx.String("id")
+
+		ctx := ReqContext(cctx)
+		schedulerAPI, closer, err := GetSchedulerAPI(cctx, "")
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		info, err := schedulerAPI.GetWorkloadRecord(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("find---------- ", info.AssetCID)
+
+		ws := make([]*types.Workload, 0)
+		dec := gob.NewDecoder(bytes.NewBuffer(info.Workloads))
+		err = dec.Decode(&ws)
+		if err != nil {
+			log.Errorf("decode data to []*types.Workload error: %s", err.Error())
+			return err
+		}
+
+		for _, w := range ws {
+			fmt.Println(w.SourceID)
+		}
+
+		return nil
+	},
+}
 
 var setNodePortCmd = &cli.Command{
 	Name:  "set-node-port",

@@ -570,10 +570,10 @@ func (n *SQLDB) LoadWorkloadRecord(workload *types.WorkloadRecord) ([]*types.Wor
 }
 
 // LoadWorkloadRecordOfID load workload record
-func (n *SQLDB) LoadWorkloadRecordOfID(workloadID string, status types.WorkloadStatus) (*types.WorkloadRecord, error) {
-	query := fmt.Sprintf(`SELECT * FROM %s WHERE workload_id=? AND status=?`, workloadRecordTable)
+func (n *SQLDB) LoadWorkloadRecordOfID(workloadID string) (*types.WorkloadRecord, error) {
+	query := fmt.Sprintf(`SELECT * FROM %s WHERE workload_id=? `, workloadRecordTable)
 	var record types.WorkloadRecord
-	err := n.db.Get(&record, query, workloadID, status)
+	err := n.db.Get(&record, query, workloadID)
 	if err != nil {
 		return nil, err
 	}
@@ -877,14 +877,15 @@ func (n *SQLDB) UpdateNodeProfit(sIDs []string, profit float64) error {
 
 // CleanData delete events
 func (n *SQLDB) CleanData() error {
-	query := fmt.Sprintf(`DELETE FROM %s WHERE end_time<DATE_SUB(NOW(), INTERVAL 10 DAY) `, replicaEventTable)
+	query := fmt.Sprintf(`DELETE FROM %s WHERE end_time<DATE_SUB(NOW(), INTERVAL 30 DAY) `, replicaEventTable)
 	_, err := n.db.Exec(query)
 	if err != nil {
 		return err
 	}
 
-	query = fmt.Sprintf(`DELETE FROM %s WHERE end_time<DATE_SUB(NOW(), INTERVAL 30 DAY) `, retrieveEventTable)
-	_, err = n.db.Exec(query)
+	cleanTime := time.Now().Add(-30).Unix()
+	query = fmt.Sprintf(`DELETE FROM %s WHERE end_time<? `, retrieveEventTable)
+	_, err = n.db.Exec(query, cleanTime)
 	if err != nil {
 		return err
 	}
@@ -930,6 +931,19 @@ func (n *SQLDB) SaveCandidateCodeInfo(infos []*types.CandidateCodeInfo) error {
 	}
 
 	return tx.Commit()
+}
+
+// GetCandidateCodeInfos code info
+func (n *SQLDB) GetCandidateCodeInfos() ([]*types.CandidateCodeInfo, error) {
+	var infos []*types.CandidateCodeInfo
+	query := fmt.Sprintf("SELECT * FROM %s WHERE ", candidateCodeTable)
+
+	err := n.db.Select(&infos, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return infos, nil
 }
 
 // GetCandidateCodeInfo code info

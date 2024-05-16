@@ -236,6 +236,8 @@ type Scheduler interface {
 	// SubmitNodeWorkloadReport(ctx context.Context, r io.Reader) error //perm:edge,candidate
 	// GetWorkloadRecords retrieves a list of workload results with pagination using the specified limit, offset, and node
 	GetWorkloadRecords(ctx context.Context, nodeID string, limit, offset int) (*types.ListWorkloadRecordRsp, error) //perm:web,admin
+	// GetWorkloadRecord retrieves a list of workload results with pagination using the specified limit, offset, and node
+	GetWorkloadRecord(ctx context.Context, id string) (*types.WorkloadRecord, error) //perm:web,admin
 	// GetWorkloadRecord retrieves result with tokenID
 	// GetWorkloadRecord(ctx context.Context, tokenID string) (*types.WorkloadRecord, error) //perm:web,admin
 	// GetRetrieveEventRecords retrieves a list of retrieve event with pagination using the specified limit, offset, and node

@@ -81,7 +81,7 @@ func (m *Manager) handleResults() {
 
 // handleUserWorkload handle node workload
 func (m *Manager) handleUserWorkload(data *types.WorkloadRecordReq) error {
-	record, err := m.LoadWorkloadRecordOfID(data.WorkloadID, types.WorkloadStatusCreate)
+	record, err := m.LoadWorkloadRecordOfID(data.WorkloadID)
 	if err != nil {
 		log.Errorf("handleUserWorkload LoadWorkloadRecordOfID error: %s", err.Error())
 		return err
@@ -89,6 +89,10 @@ func (m *Manager) handleUserWorkload(data *types.WorkloadRecordReq) error {
 
 	if record == nil {
 		log.Errorf("handleUserWorkload not found Workload: %s", data.WorkloadID)
+		return nil
+	}
+
+	if record.Status != types.WorkloadStatusCreate {
 		return nil
 	}
 
@@ -198,10 +202,14 @@ func (m *Manager) handleNodeWorkload(data *types.WorkloadRecordReq, nodeID strin
 	downloadTotalSize := int64(0)
 
 	if data.WorkloadID != "" {
-		record, err = m.LoadWorkloadRecordOfID(data.WorkloadID, types.WorkloadStatusCreate)
+		record, err = m.LoadWorkloadRecordOfID(data.WorkloadID)
 		if err != nil {
 			log.Errorf("handleUserWorkload LoadWorkloadRecordOfID error: %s", err.Error())
 			return err
+		}
+
+		if record.Status != types.WorkloadStatusCreate {
+			return nil
 		}
 
 		for _, dw := range data.Workloads {
