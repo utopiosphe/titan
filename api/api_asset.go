@@ -30,4 +30,10 @@ type Asset interface {
 	GetAssetsInBucket(ctx context.Context, bucketID int) ([]string, error) //perm:admin
 	// SyncAssetViewAndData sync assetView and local car
 	SyncAssetViewAndData(ctx context.Context) error //perm:admin
+	// RequestFreeUpDisk Initiate a request to free up disk space with a certain size, size unit GiB
+	RequestFreeUpDisk(ctx context.Context, size float64) error //perm:admin
+	// StateFreeUpDisk shows the result of last free task is done, return nil means done
+	StateFreeUpDisk(ctx context.Context) ([]*types.FreeUpDiskState, error) //perm:admin
+	// ClearFreeUpDisk clear the previous failed task
+	ClearFreeUpDisk(ctx context.Context) error //perm:admin
 }

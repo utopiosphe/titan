@@ -294,3 +294,8 @@ type AssetView struct {
 	// key bucketID, value bucketHash
 	BucketHashes map[uint32]string
 }
+
+type FreeUpDiskState struct {
+	Hash   string
+	ErrMsg string
+}

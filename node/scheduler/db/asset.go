@@ -178,6 +178,19 @@ func (n *SQLDB) LoadAssetRecord(hash string) (*types.AssetRecord, error) {
 	return &info, nil
 }
 
+// func (n *SQLDB) LoadAssetRecordsByHashes(hashes []string) ([]*types.AssetRecord, error) {
+// 	var ret = make([]*types.AssetRecord, 0)
+// 	sQuery := fmt.Sprintf(`SELECT * from %s WHERE hash in (?)`, assetRecordTable)
+// 	query, args, err := sqlx.In(sQuery, hashes)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	query = n.db.Rebind(query)
+// 	err = n.db.Select(&ret, query, args...)
+// 	return ret, err
+// }
+
 // LoadRecords load the asset records from the incoming scheduler
 func (n *SQLDB) LoadRecords(statuses []string, serverID dtypes.ServerID) ([]*types.AssetRecord, error) {
 	sQuery := fmt.Sprintf(`SELECT * FROM %s a LEFT JOIN %s b ON a.hash = b.hash WHERE state in (?) `, assetStateTable(serverID), assetRecordTable)

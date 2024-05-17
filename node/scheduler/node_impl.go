@@ -24,6 +24,7 @@ import (
 	"github.com/Filecoin-Titan/titan/node/handler"
 	titanrsa "github.com/Filecoin-Titan/titan/node/rsa"
 	"github.com/Filecoin-Titan/titan/node/scheduler/node"
+	"github.com/docker/go-units"
 	"github.com/gbrlsnchs/jwt/v3"
 	"github.com/google/uuid"
 	"golang.org/x/xerrors"
@@ -1335,11 +1336,6 @@ func (s *Scheduler) FreeUpDiskSpace(ctx context.Context, nodeID string, size int
 		return nil, err
 	}
 
-	err = s.db.SaveFreeUpDiskTime(nodeID, now)
-	if err != nil {
-		return nil, err
-	}
-
 	removeList := make([]string, 0)
 
 	for _, hash := range hashes {
@@ -1359,6 +1355,13 @@ func (s *Scheduler) FreeUpDiskSpace(ctx context.Context, nodeID string, size int
 		size -= asset.TotalSize
 		if size <= 0 {
 			break
+		}
+	}
+
+	if len(removeList) > 0 {
+		err = s.db.SaveFreeUpDiskTime(nodeID, now)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -1432,4 +1435,115 @@ func generateRandomString(n int) string {
 	}
 
 	return string(b)
+}
+
+// dpGetRemoveAssetsClosetSize returns a certain MiB size that is closest to the demand MiB size based on Dynamic Programming
+func dpGetRemoveAssetsClosetSize(assets []*types.AssetRecord, target int64) int64 {
+	n := int64(len(assets))
+
+	maxPossibleSum := int64(0)
+	for _, asset := range assets {
+		maxPossibleSum += asset.TotalSize / units.MiB
+	}
+
+	if target > maxPossibleSum {
+		return maxPossibleSum
+	}
+
+	subset := make([][]bool, n+1)
+	for i := range subset {
+		subset[i] = make([]bool, maxPossibleSum+1)
+	}
+
+	for i := int64(0); i <= n; i++ {
+		subset[i][0] = true
+	}
+
+	for i := int64(1); i <= int64(maxPossibleSum); i++ {
+		subset[0][i] = false
+	}
+
+	for i := int64(1); i <= n; i++ {
+		for j := int64(1); j <= int64(maxPossibleSum); j++ {
+			if j < assets[i-1].TotalSize/units.MiB {
+				subset[i][j] = subset[i-1][j]
+			}
+			if j >= assets[i-1].TotalSize/units.MiB {
+				subset[i][j] = subset[i-1][j] || subset[i-1][j-assets[i-1].TotalSize/units.MiB]
+			}
+		}
+	}
+
+	if subset[n][target] {
+		return target
+	}
+
+	closestSum := int64(0)
+	if subset[n][target] {
+		closestSum = target
+	} else {
+		for i := 1; target-int64(i) >= 0 || target+int64(i) <= maxPossibleSum; i++ {
+			lf := target-int64(i) >= 0 && subset[n][target-int64(i)]
+			rf := target+int64(i) <= maxPossibleSum && subset[n][target+int64(i)]
+			if lf || rf {
+				if lf && !rf {
+					closestSum = target - int64(i)
+				}
+				if !lf && rf {
+					closestSum = target + int64(i)
+				}
+				if lf && rf {
+					closestSum = target - int64(i)
+				}
+				break
+			}
+		}
+	}
+
+	return closestSum
+}
+
+// dpGetRemoveAssets returns the combination of to-remove list with a specified size
+func dpGetRemoveAssets(assets []*types.AssetRecord, sum int64) []*types.AssetRecord {
+	n := int64(len(assets))
+
+	subset := make([][]bool, n+1)
+	for i := range subset {
+		subset[i] = make([]bool, sum+1)
+	}
+
+	for i := int64(0); i <= n; i++ {
+		subset[i][0] = true
+	}
+
+	for i := int64(1); i <= sum; i++ {
+		subset[0][i] = false
+	}
+
+	for i := int64(1); i <= n; i++ {
+		for j := int64(1); j <= sum; j++ {
+			if j < assets[i-1].TotalSize/units.MiB {
+				subset[i][j] = subset[i-1][j]
+			}
+			if j >= assets[i-1].TotalSize/units.MiB {
+				subset[i][j] = subset[i-1][j] || subset[i-1][j-assets[i-1].TotalSize/units.MiB]
+			}
+		}
+	}
+
+	if !subset[n][sum] {
+		return nil
+	}
+
+	sub := make([]*types.AssetRecord, 0)
+	i, j := n, sum
+	for i > 0 && j > 0 {
+		if subset[i][j] != subset[i-1][j] {
+			sub = append(sub, assets[i-1])
+			j -= assets[i-1].TotalSize / units.MiB
+		}
+		i--
+	}
+
+	return sub
 }
