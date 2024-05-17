@@ -58,6 +58,9 @@ type Manager struct {
 	// hold the error msg, and wait for scheduler query asset progress
 	pullAssetErrMsgs *sync.Map
 	rateLimiter      *types.RateLimiter
+
+	// releaser means result of scheduler.FreeUpDiskSpace
+	releaser *releaser
 }
 
 // ManagerOptions is the struct that contains options for Manager
@@ -90,6 +93,8 @@ func NewManager(ctx context.Context, opts *ManagerOptions) (*Manager, error) {
 
 		uploadingAssets:  &sync.Map{},
 		pullAssetErrMsgs: &sync.Map{},
+
+		releaser: NewReleaser(),
 	}
 
 	m.restoreWaitListFromStore()

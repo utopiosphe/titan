@@ -16,6 +16,7 @@ import (
 	"github.com/Filecoin-Titan/titan/api"
 	"github.com/Filecoin-Titan/titan/api/client"
 	"github.com/Filecoin-Titan/titan/api/types"
+
 	"github.com/Filecoin-Titan/titan/node/config"
 	"github.com/Filecoin-Titan/titan/node/repo"
 	titanrsa "github.com/Filecoin-Titan/titan/node/rsa"
@@ -37,7 +38,8 @@ const (
 	methodDownloadFile     = "downloadFile"
 	methodDownloadProgress = "downloadProgress"
 	methodDownloadCancel   = "downloadCancel"
-	methodFreeUpDisk       = "freeUpDisk"
+	methodReqFreeUpDisk    = "reqFreeUpDisk"
+	methodStateFreeUpDisk  = "stateFreeUpDisk"
 )
 
 type DaemonSwitch struct {
@@ -97,6 +99,7 @@ type DownloadCancelReq struct {
 }
 
 type FreeUpDiskReq struct {
+	Size float64 `json:"size"`
 }
 
 type FreeUpDiskResp struct {
@@ -166,8 +169,10 @@ func (clib *CLib) JSONCall(jsonStr string) *JSONCallResult {
 		return clib.downloadProgress(args.JSONParams)
 	case methodDownloadCancel:
 		return clib.downloadCancel(args.JSONParams)
-	case methodFreeUpDisk:
-		return clib.freeUpDisk(args.JSONParams)
+	case methodReqFreeUpDisk:
+		return clib.reqFreeUpDisk(args.JSONParams)
+	case methodStateFreeUpDisk:
+		return clib.stateFreeUpDisk()
 	default:
 		result.Code = -1
 		result.Msg = fmt.Sprintf("Method %s not found", args.Method)
@@ -343,7 +348,8 @@ func (clib *CLib) mergeConfig(jsonStr string) *JSONCallResult {
 	edgeConfig.Storage = newEdgeConfig.Storage
 	edgeConfig.Memory = newEdgeConfig.Memory
 	edgeConfig.CPU = newEdgeConfig.CPU
-	edgeConfig.Bandwidth.BandwidthKB = newEdgeConfig.Bandwidth.BandwidthKB
+	edgeConfig.Bandwidth = newEdgeConfig.Bandwidth
+	edgeConfig.Netflow = newEdgeConfig.Netflow
 
 	configBytes, err := config.GenerateConfigUpdate(edgeConfig, config.DefaultEdgeCfg(), true)
 	if err != nil {
@@ -512,11 +518,40 @@ func (clib *CLib) downloadCancel(jsonStr string) *JSONCallResult {
 	return &JSONCallResult{Code: 0, Msg: "ok"}
 }
 
-func (clib *CLib) freeUpDisk(jsonStr string) *JSONCallResult {
+func (clib *CLib) reqFreeUpDisk(jsonStr string) *JSONCallResult {
 	req := FreeUpDiskReq{}
 	err := json.Unmarshal([]byte(jsonStr), &req)
 	if err != nil {
 		return &JSONCallResult{Code: -1, Msg: fmt.Sprintf("marshal input args failed:%s", err.Error())}
 	}
-	return nil
+
+	edgeApi, closer, err := newEdgeAPI(clib.repoPath)
+	if err != nil {
+		return &JSONCallResult{Code: -1, Msg: fmt.Sprintf("get edge api error %s", err.Error())}
+	}
+	defer closer()
+
+	if err := edgeApi.RequestFreeUpDisk(context.Background(), req.Size); err != nil {
+		return &JSONCallResult{Code: -1, Msg: fmt.Sprintf("request free up disk error %s", err.Error())}
+	}
+
+	return &JSONCallResult{Code: 0, Msg: "ok"}
+}
+
+func (clib *CLib) stateFreeUpDisk() *JSONCallResult {
+	edgeApi, closer, err := newEdgeAPI(clib.repoPath)
+	if err != nil {
+		return &JSONCallResult{Code: -1, Msg: fmt.Sprintf("get edge api error %s", err.Error())}
+	}
+	defer closer()
+
+	waitingList, err := edgeApi.StateFreeUpDisk(context.Background())
+	if err != nil {
+		return &JSONCallResult{Code: -1, Msg: fmt.Sprintf("state free up disk error %s", err.Error())}
+	}
+
+	if len(waitingList) == 0 {
+		return &JSONCallResult{Code: 0, Msg: "ok"}
+	}
+	return &JSONCallResult{Code: -1, Msg: "free up task is still in progress"}
 }

@@ -1306,31 +1306,38 @@ var freeUpDiskCmd = &cli.Command{
 				}
 				defer edgeClose()
 
-				nodeID, err := api.GetNodeID(cctx.Context)
-				if err != nil {
-					log.Errorf("get node-id failed: %s", err.Error())
-					return nil
-				}
+				ret, err := api.StateFreeUpDisk(cctx.Context)
 
-				schedulerAPI, schedulerClose, err := GetSchedulerAPI(cctx, nodeID)
 				if err != nil {
-					log.Errorf("get scheduler api failed: %s", err.Error())
-					return nil
-				}
-				defer schedulerClose()
-
-				events, err := schedulerAPI.GetReplicaEventsForNode(cctx.Context, nodeID, 100, 0)
-				if err != nil {
-					log.Errorf("load node replica events failed: %s", err.Error())
+					log.Errorf("fetch state of fuds task error: %s", err.Error())
 					return err
 				}
 
-				if events.Total > 0 {
-					log.Info("free up disk is pending")
+				if len(ret) == 0 {
+					log.Info("task is done!")
 					return nil
 				}
+				log.Info("task in in-progress!")
+				return nil
+			},
+		},
+		{
+			Name:  "clear",
+			Usage: "Clear the previous failed free-up-disk task",
+			Action: func(cctx *cli.Context) error {
+				api, edgeClose, err := getEdgeAPI(cctx)
+				if err != nil {
+					log.Errorf("get egde api failed: %s", err.Error())
+					return err
+				}
+				defer edgeClose()
 
-				log.Info("free up disk is done!")
+				err = api.ClearFreeUpDisk(cctx.Context)
+
+				if err != nil {
+					log.Errorf("clear fuds task error: %s", err.Error())
+					return err
+				}
 				return nil
 			},
 		},
@@ -1344,7 +1351,6 @@ var freeUpDiskCmd = &cli.Command{
 				if f <= 0 {
 					return nil
 				}
-				freeBytes := int64(f * units.GiB)
 
 				api, edgeClose, err := getEdgeAPI(cctx)
 				if err != nil {
@@ -1353,24 +1359,11 @@ var freeUpDiskCmd = &cli.Command{
 				}
 				defer edgeClose()
 
-				nodeID, err := api.GetNodeID(cctx.Context)
-				if err != nil {
-					log.Errorf("get node-id failed: %s", err.Error())
-					return nil
-				}
-
-				schedulerAPI, schedulerClose, err := GetSchedulerAPI(cctx, nodeID)
-				if err != nil {
-					log.Errorf("get scheduler api failed: %s", err.Error())
-					return nil
-				}
-				defer schedulerClose()
-
-				err = schedulerAPI.FreeUpDiskSpace(cctx.Context, nodeID, freeBytes)
-				if err != nil {
-					log.Errorf("request to free up disk of %d bytes to scheduler failed :%s", freeBytes, err.Error())
+				if err := api.RequestFreeUpDisk(cctx.Context, f); err != nil {
+					log.Warnf("request to free up disk failed: %s, if previous task exists, please call --clear to remove", err.Error())
 					return err
 				}
+
 				return nil
 			},
 		},

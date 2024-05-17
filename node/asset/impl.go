@@ -2,6 +2,7 @@ package asset
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/Filecoin-Titan/titan/api/types"
 	"github.com/Filecoin-Titan/titan/node/asset/storage"
 	"github.com/Filecoin-Titan/titan/node/ipld"
+	"github.com/docker/go-units"
 	"github.com/gbrlsnchs/jwt/v3"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-libipfs/blocks"
@@ -82,9 +84,12 @@ func (a *Asset) DeleteAsset(ctx context.Context, assetCID string) error {
 		_, diskUsage := a.mgr.GetDiskUsageStat()
 		ret := types.RemoveAssetResult{BlocksCount: a.TotalBlockCount, DiskUsage: diskUsage}
 
-		if err := a.scheduler.NodeRemoveAssetResult(context.Background(), ret); err != nil {
+		err = a.scheduler.NodeRemoveAssetResult(context.Background(), ret)
+		if err != nil {
 			log.Errorf("remove asset result failed %s", err.Error())
 		}
+
+		a.mgr.releaser.setFile(c.Hash().String(), err)
 	}()
 
 	return nil
@@ -315,6 +320,46 @@ func (a *Asset) GetAssetsInBucket(ctx context.Context, bucketID int) ([]string, 
 	}
 	return hashes, nil
 }
+
 func (a *Asset) SyncAssetViewAndData(ctx context.Context) error {
 	return a.mgr.syncDataWithAssetView()
+}
+
+func (a *Asset) RequestFreeUpDisk(ctx context.Context, size float64) error {
+	if a.mgr.releaser.count() > 0 {
+		return errors.New("the last free-up-disk task is not done")
+	}
+
+	if size <= 0 {
+		return nil
+	}
+	freeBytes := int64(size * units.GiB)
+
+	hashes, err := a.scheduler.FreeUpDiskSpace(ctx, "", freeBytes)
+	if err != nil {
+		return err
+	}
+
+	a.mgr.releaser.initFiles(hashes)
+
+	return nil
+}
+
+func (a *Asset) StateFreeUpDisk(ctx context.Context) ([]*types.FreeUpDiskState, error) {
+	var res []*types.FreeUpDiskState
+	for _, v := range a.mgr.releaser.load() {
+		res = append(res, &types.FreeUpDiskState{
+			Hash:   v.Hash,
+			ErrMsg: v.ErrMsg,
+		})
+	}
+	return res, nil
+}
+
+func (a *Asset) ClearFreeUpDisk(ctx context.Context) error {
+	if a.mgr.releaser.count() == 0 {
+		return nil
+	}
+	a.mgr.releaser.clear()
+	return nil
 }
