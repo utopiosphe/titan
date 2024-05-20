@@ -40,6 +40,7 @@ func (r *releaser) count() int {
 func (r *releaser) initFiles(hashes []string) {
 	r.Lock()
 	defer r.Unlock()
+	r.files = make(map[string]*releaserState)
 	for _, hash := range hashes {
 		r.files[hash] = &releaserState{}
 	}

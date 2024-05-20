@@ -158,6 +158,8 @@ type NodeAPI interface {
 	GetProfitDetailsForNode(ctx context.Context, nodeID string, limit, offset int, ts []int) (*types.ListNodeProfitDetailsRsp, error) //perm:web,admin
 	// FreeUpDiskSpace  Request to free up disk space, returns free hashes and next time
 	FreeUpDiskSpace(ctx context.Context, nodeID string, size int64) (*types.FreeUpDiskResp, error) //perm:edge,candidate,admin
+	// GetNextFreeTime returns the next free up time
+	GetNextFreeTime(ctx context.Context, nodeID string) (int64, error)
 	// UpdateNodeDynamicInfo
 	UpdateNodeDynamicInfo(ctx context.Context, info *types.NodeDynamicInfo) error //perm:admin
 	// GenerateCandidateCode

@@ -305,6 +305,8 @@ type NodeAPIStruct struct {
 
 		GetMinioConfigFromCandidate func(p0 context.Context, p1 string) (*types.MinioConfig, error) `perm:"default"`
 
+		GetNextFreeTime func(p0 context.Context, p1 string) (int64, error) ``
+
 		GetNodeInfo func(p0 context.Context, p1 string) (types.NodeInfo, error) `perm:"web,admin"`
 
 		GetNodeList func(p0 context.Context, p1 int, p2 int) (*types.ListNodesRsp, error) `perm:"web,admin"`
@@ -1511,6 +1513,17 @@ func (s *NodeAPIStruct) GetMinioConfigFromCandidate(p0 context.Context, p1 strin
 
 func (s *NodeAPIStub) GetMinioConfigFromCandidate(p0 context.Context, p1 string) (*types.MinioConfig, error) {
 	return nil, ErrNotSupported
+}
+
+func (s *NodeAPIStruct) GetNextFreeTime(p0 context.Context, p1 string) (int64, error) {
+	if s.Internal.GetNextFreeTime == nil {
+		return 0, ErrNotSupported
+	}
+	return s.Internal.GetNextFreeTime(p0, p1)
+}
+
+func (s *NodeAPIStub) GetNextFreeTime(p0 context.Context, p1 string) (int64, error) {
+	return 0, ErrNotSupported
 }
 
 func (s *NodeAPIStruct) GetNodeInfo(p0 context.Context, p1 string) (types.NodeInfo, error) {

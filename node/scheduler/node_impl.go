@@ -1306,6 +1306,9 @@ func (s *Scheduler) GetProfitDetailsForNode(ctx context.Context, nodeID string, 
 	return info, nil
 }
 
+// Interval for initiating free space release
+var FreeUpDayInterval = 5
+
 // FreeUpDiskSpace Request to free up disk space, returns file hashes and next time
 func (s *Scheduler) FreeUpDiskSpace(ctx context.Context, nodeID string, size int64) (*types.FreeUpDiskResp, error) {
 	nID := handler.GetNodeID(ctx)
@@ -1323,12 +1326,11 @@ func (s *Scheduler) FreeUpDiskSpace(ctx context.Context, nodeID string, size int
 		return &types.FreeUpDiskResp{}, err
 	}
 
-	day := 5
 	now := time.Now()
-	fiveDaysAgo := now.AddDate(0, 0, -day)
-	nextReleaseTime := t.AddDate(0, 0, +day)
+	fiveDaysAgo := now.AddDate(0, 0, -FreeUpDayInterval)
+	nextReleaseTime := t.AddDate(0, 0, +FreeUpDayInterval)
 	if !t.Before(fiveDaysAgo) {
-		return &types.FreeUpDiskResp{NextTime: nextReleaseTime.Unix()}, xerrors.Errorf("Less than %d days have passed since the last release", day)
+		return &types.FreeUpDiskResp{NextTime: nextReleaseTime.Unix()}, xerrors.Errorf("Less than %d days have passed since the last release", FreeUpDayInterval)
 	}
 
 	// todo
@@ -1362,7 +1364,7 @@ func (s *Scheduler) FreeUpDiskSpace(ctx context.Context, nodeID string, size int
 	if len(removeList) > 0 {
 		err = s.db.SaveFreeUpDiskTime(nodeID, now)
 		if err != nil {
-			return &types.FreeUpDiskResp{NextTime: now.AddDate(0, 0, +day).Unix()}, err
+			return &types.FreeUpDiskResp{NextTime: now.AddDate(0, 0, +FreeUpDayInterval).Unix()}, err
 		}
 	}
 
@@ -1371,7 +1373,21 @@ func (s *Scheduler) FreeUpDiskSpace(ctx context.Context, nodeID string, size int
 		log.Errorf("FreeUpDiskSpace %s SaveReplenishBackup err:%s", nodeID, err.Error())
 	}
 
-	return &types.FreeUpDiskResp{Hashes: removeList, NextTime: now.AddDate(0, 0, +day).Unix()}, nil
+	return &types.FreeUpDiskResp{Hashes: removeList, NextTime: now.AddDate(0, 0, +FreeUpDayInterval).Unix()}, nil
+}
+
+func (s *Scheduler) GetNextFreeTime(ctx context.Context, nodeID string) (int64, error) {
+	nID := handler.GetNodeID(ctx)
+	if nID != "" {
+		nodeID = nID
+	}
+
+	t, err := s.db.LoadFreeUpDiskTime(nodeID)
+	if err != nil {
+		return 0, err
+	}
+
+	return t.AddDate(0, 0, +FreeUpDayInterval).Unix(), nil
 }
 
 func (s *Scheduler) UpdateNodeDynamicInfo(ctx context.Context, info *types.NodeDynamicInfo) error {

@@ -358,6 +358,14 @@ func (a *Asset) StateFreeUpDisk(ctx context.Context) (*types.FreeUpDiskStateResp
 			ErrMsg: v.ErrMsg,
 		})
 	}
+	// if restart nextTime would be remove from memory, this retrieve the time from scheduler
+	if a.mgr.releaser.nextTime == 0 {
+		t, err := a.scheduler.GetNextFreeTime(ctx, "")
+		if err != nil {
+			return nil, fmt.Errorf("get free-up-disk state from scheduler error: %s", err.Error())
+		}
+		a.mgr.releaser.nextTime = t
+	}
 	return &types.FreeUpDiskStateResp{Hashes: res, NextTime: a.mgr.releaser.nextTime}, nil
 }
 

@@ -551,14 +551,18 @@ func (clib *CLib) stateFreeUpDisk() *JSONCallResult {
 	defer closer()
 
 	ret, err := edgeApi.StateFreeUpDisk(context.Background())
+
 	if err != nil {
-		return &JSONCallResult{Code: -1, Msg: fmt.Sprintf("state free up disk error %s", err.Error()), Data: jsonStr(stateFreeUpDiskResp{WaitingList: ret.Hashes, NextTime: ret.NextTime})}
+		return &JSONCallResult{Code: -1, Msg: fmt.Sprintf("state free up disk error %s", err.Error())}
 	}
 
-	if len(ret.Hashes) == 0 {
-		return &JSONCallResult{Code: 0, Msg: "ok"}
+	respStr := stateFreeUpDiskResp{
+		WaitingList: ret.Hashes, NextTime: ret.NextTime,
 	}
-	return &JSONCallResult{Code: -1, Msg: "free up task is still in progress"}
+	if len(ret.Hashes) == 0 {
+		return &JSONCallResult{Code: 0, Msg: "ok", Data: jsonStr(respStr)}
+	}
+	return &JSONCallResult{Code: -1, Msg: "free up task is still in progress", Data: jsonStr(respStr)}
 }
 
 func jsonStr(v any) string {
