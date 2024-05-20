@@ -305,7 +305,7 @@ type NodeAPIStruct struct {
 
 		GetMinioConfigFromCandidate func(p0 context.Context, p1 string) (*types.MinioConfig, error) `perm:"default"`
 
-		GetNextFreeTime func(p0 context.Context, p1 string) (int64, error) ``
+		GetNextFreeTime func(p0 context.Context, p1 string) (int64, error) `perm:"edge,candidate,admin"`
 
 		GetNodeInfo func(p0 context.Context, p1 string) (types.NodeInfo, error) `perm:"web,admin"`
 
