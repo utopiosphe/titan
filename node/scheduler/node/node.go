@@ -326,7 +326,7 @@ func (n *Node) NetFlowUpExcess(size float64) bool {
 	}
 
 	if n.NetFlowUp >= n.UploadTraffic+int64(size) {
-		return true
+		return false
 	}
 
 	return true
@@ -338,7 +338,7 @@ func (n *Node) NetFlowDownExcess(size float64) bool {
 	}
 
 	if n.NetFlowDown >= n.DownloadTraffic+int64(size) {
-		return true
+		return false
 	}
 
 	return true

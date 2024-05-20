@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/Filecoin-Titan/titan/api"
@@ -10,6 +11,7 @@ import (
 	"github.com/Filecoin-Titan/titan/api/types"
 	"github.com/Filecoin-Titan/titan/node/cidutil"
 	"github.com/Filecoin-Titan/titan/node/handler"
+	"github.com/Filecoin-Titan/titan/node/scheduler/node"
 	"github.com/Filecoin-Titan/titan/node/scheduler/user"
 	"github.com/filecoin-project/go-jsonrpc/auth"
 	"golang.org/x/xerrors"
@@ -426,4 +428,44 @@ func (s *Scheduler) GetAPPKeyPermissions(ctx context.Context, userID string, key
 		permissions = append(permissions, string(accessControl))
 	}
 	return permissions, nil
+}
+
+func (s *Scheduler) GetNodeUploadInfo(ctx context.Context, userID string) (*types.UploadInfo, error) {
+	uID := handler.GetUserID(ctx)
+	if len(uID) > 0 {
+		userID = uID
+	}
+
+	var cNode *node.Node
+	_, nodes := s.NodeManager.GetAllCandidateNodes()
+	sort.Slice(nodes, func(i, j int) bool {
+		return nodes[i].TitanDiskUsage < nodes[j].TitanDiskUsage
+	})
+	for _, node := range nodes {
+		if node.IsStorageOnly {
+			cNode = node
+			break
+		}
+	}
+
+	if cNode == nil {
+		return nil, &api.ErrWeb{Code: terrors.NodeOffline.Int(), Message: fmt.Sprintf("storage's nodes not found")}
+	}
+
+	payload := &types.AuthUserUploadDownloadAsset{
+		UserID:     userID,
+		Expiration: time.Now().Add(time.Hour),
+	}
+
+	token, err := cNode.API.CreateAsset(context.Background(), payload)
+	if err != nil {
+		return nil, &api.ErrWeb{Code: terrors.RequestNodeErr.Int(), Message: err.Error()}
+	}
+
+	uploadURL := fmt.Sprintf("http://%s/upload", cNode.RemoteAddr)
+	if len(cNode.ExternalURL) > 0 {
+		uploadURL = fmt.Sprintf("%s/upload", cNode.ExternalURL)
+	}
+
+	return &types.UploadInfo{UploadURL: uploadURL, Token: token, NodeID: cNode.NodeID}, nil
 }

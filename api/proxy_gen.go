@@ -55,7 +55,7 @@ type AssetAPIStruct struct {
 	Internal struct {
 		AddAWSData func(p0 context.Context, p1 []types.AWSDataInfo) error `perm:"web,admin"`
 
-		CreateAsset func(p0 context.Context, p1 *types.CreateAssetReq) (*types.CreateAssetRsp, error) `perm:"web,admin,user"`
+		CreateAsset func(p0 context.Context, p1 *types.CreateAssetReq) (*types.UploadInfo, error) `perm:"web,admin,user"`
 
 		DeleteAsset func(p0 context.Context, p1 string, p2 string) error `perm:"web,admin,user"`
 
@@ -426,6 +426,8 @@ type UserAPIStruct struct {
 
 		GetAPPKeyPermissions func(p0 context.Context, p1 string, p2 string) ([]string, error) `perm:"user,web,admin"`
 
+		GetNodeUploadInfo func(p0 context.Context, p1 string) (*types.UploadInfo, error) `perm:"user,web,admin"`
+
 		GetUserAccessToken func(p0 context.Context, p1 string) (string, error) `perm:"web,admin"`
 
 		GetUserInfo func(p0 context.Context, p1 string) (*types.UserInfo, error) `perm:"web,admin"`
@@ -631,14 +633,14 @@ func (s *AssetAPIStub) AddAWSData(p0 context.Context, p1 []types.AWSDataInfo) er
 	return ErrNotSupported
 }
 
-func (s *AssetAPIStruct) CreateAsset(p0 context.Context, p1 *types.CreateAssetReq) (*types.CreateAssetRsp, error) {
+func (s *AssetAPIStruct) CreateAsset(p0 context.Context, p1 *types.CreateAssetReq) (*types.UploadInfo, error) {
 	if s.Internal.CreateAsset == nil {
 		return nil, ErrNotSupported
 	}
 	return s.Internal.CreateAsset(p0, p1)
 }
 
-func (s *AssetAPIStub) CreateAsset(p0 context.Context, p1 *types.CreateAssetReq) (*types.CreateAssetRsp, error) {
+func (s *AssetAPIStub) CreateAsset(p0 context.Context, p1 *types.CreateAssetReq) (*types.UploadInfo, error) {
 	return nil, ErrNotSupported
 }
 
@@ -2015,6 +2017,17 @@ func (s *UserAPIStruct) GetAPPKeyPermissions(p0 context.Context, p1 string, p2 s
 
 func (s *UserAPIStub) GetAPPKeyPermissions(p0 context.Context, p1 string, p2 string) ([]string, error) {
 	return *new([]string), ErrNotSupported
+}
+
+func (s *UserAPIStruct) GetNodeUploadInfo(p0 context.Context, p1 string) (*types.UploadInfo, error) {
+	if s.Internal.GetNodeUploadInfo == nil {
+		return nil, ErrNotSupported
+	}
+	return s.Internal.GetNodeUploadInfo(p0, p1)
+}
+
+func (s *UserAPIStub) GetNodeUploadInfo(p0 context.Context, p1 string) (*types.UploadInfo, error) {
+	return nil, ErrNotSupported
 }
 
 func (s *UserAPIStruct) GetUserAccessToken(p0 context.Context, p1 string) (string, error) {

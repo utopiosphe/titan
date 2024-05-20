@@ -165,7 +165,7 @@ func (u *User) DeleteAPIKey(ctx context.Context, name string) error {
 }
 
 // CreateAsset creates an asset with car CID, car name, and car size.
-func (u *User) CreateAsset(ctx context.Context, req *types.CreateAssetReq) (*types.CreateAssetRsp, error) {
+func (u *User) CreateAsset(ctx context.Context, req *types.CreateAssetReq) (*types.UploadInfo, error) {
 	hash, err := cidutil.CIDToHash(req.AssetCID)
 	if err != nil {
 		return nil, &api.ErrWeb{Code: terrors.CidToHashFiled.Int(), Message: err.Error()}

@@ -7,9 +7,9 @@ type AssetProperty struct {
 	AssetName string
 	AssetSize int64
 	AssetType string
-	NodeID    string
-	Password  string
-	GroupID   int
+	// NodeID    string
+	Password string
+	GroupID  int
 }
 
 type CreateAssetReq struct {
@@ -17,9 +17,10 @@ type CreateAssetReq struct {
 	AssetProperty
 }
 
-type CreateAssetRsp struct {
+type UploadInfo struct {
 	UploadURL     string
 	Token         string
+	NodeID        string
 	AlreadyExists bool
 }
 
