@@ -335,17 +335,22 @@ func (a *Asset) RequestFreeUpDisk(ctx context.Context, size float64) error {
 	}
 	freeBytes := int64(size * units.GiB)
 
-	hashes, err := a.scheduler.FreeUpDiskSpace(ctx, "", freeBytes)
+	ret, err := a.scheduler.FreeUpDiskSpace(ctx, "", freeBytes)
+
+	if ret != nil && ret.NextTime > 0 {
+		a.mgr.releaser.setNextTime(ret.NextTime)
+	}
+
 	if err != nil {
 		return err
 	}
 
-	a.mgr.releaser.initFiles(hashes)
+	a.mgr.releaser.initFiles(ret.Hashes)
 
 	return nil
 }
 
-func (a *Asset) StateFreeUpDisk(ctx context.Context) ([]*types.FreeUpDiskState, error) {
+func (a *Asset) StateFreeUpDisk(ctx context.Context) (*types.FreeUpDiskStateResp, error) {
 	var res []*types.FreeUpDiskState
 	for _, v := range a.mgr.releaser.load() {
 		res = append(res, &types.FreeUpDiskState{
@@ -353,7 +358,7 @@ func (a *Asset) StateFreeUpDisk(ctx context.Context) ([]*types.FreeUpDiskState, 
 			ErrMsg: v.ErrMsg,
 		})
 	}
-	return res, nil
+	return &types.FreeUpDiskStateResp{Hashes: res, NextTime: a.mgr.releaser.nextTime}, nil
 }
 
 func (a *Asset) ClearFreeUpDisk(ctx context.Context) error {

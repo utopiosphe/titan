@@ -1309,11 +1309,11 @@ var freeUpDiskCmd = &cli.Command{
 				ret, err := api.StateFreeUpDisk(cctx.Context)
 
 				if err != nil {
-					log.Errorf("fetch state of fuds task error: %s", err.Error())
+					log.Errorf("fetch state of fuds task error: %s, next release time is %s", err.Error(), time.Unix(ret.NextTime, 0).Format("2006-01-02 15:04:05"))
 					return err
 				}
 
-				if len(ret) == 0 {
+				if len(ret.Hashes) == 0 {
 					log.Info("task is done!")
 					return nil
 				}

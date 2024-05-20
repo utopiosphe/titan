@@ -295,6 +295,16 @@ type AssetView struct {
 	BucketHashes map[uint32]string
 }
 
+type FreeUpDiskResp struct {
+	Hashes   []string
+	NextTime int64
+}
+
+type FreeUpDiskStateResp struct {
+	Hashes   []*FreeUpDiskState
+	NextTime int64
+}
+
 type FreeUpDiskState struct {
 	Hash   string
 	ErrMsg string

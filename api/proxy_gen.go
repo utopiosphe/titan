@@ -42,7 +42,7 @@ type AssetStruct struct {
 
 		RequestFreeUpDisk func(p0 context.Context, p1 float64) error `perm:"admin"`
 
-		StateFreeUpDisk func(p0 context.Context) ([]*types.FreeUpDiskState, error) `perm:"admin"`
+		StateFreeUpDisk func(p0 context.Context) (*types.FreeUpDiskStateResp, error) `perm:"admin"`
 
 		SyncAssetViewAndData func(p0 context.Context) error `perm:"admin"`
 	}
@@ -277,7 +277,7 @@ type NodeAPIStruct struct {
 
 		EdgeConnect func(p0 context.Context, p1 *types.ConnectOptions) error `perm:"edge"`
 
-		FreeUpDiskSpace func(p0 context.Context, p1 string, p2 int64) ([]string, error) `perm:"edge,candidate,admin"`
+		FreeUpDiskSpace func(p0 context.Context, p1 string, p2 int64) (*types.FreeUpDiskResp, error) `perm:"edge,candidate,admin"`
 
 		GenerateCandidateCode func(p0 context.Context, p1 int, p2 types.NodeType) ([]string, error) `perm:"admin"`
 
@@ -331,7 +331,7 @@ type NodeAPIStruct struct {
 
 		PerformSyncData func(p0 context.Context, p1 string) error `perm:"admin"`
 
-		ReDetermineNodeNATType func(p0 context.Context, p1 string) (error) `perm:"admin,web,locator"`
+		ReDetermineNodeNATType func(p0 context.Context, p1 string) error `perm:"admin,web,locator"`
 
 		RegisterCandidateNode func(p0 context.Context, p1 string, p2 string, p3 string) (*types.ActivationDetail, error) `perm:"default"`
 
@@ -600,15 +600,15 @@ func (s *AssetStub) RequestFreeUpDisk(p0 context.Context, p1 float64) error {
 	return ErrNotSupported
 }
 
-func (s *AssetStruct) StateFreeUpDisk(p0 context.Context) ([]*types.FreeUpDiskState, error) {
+func (s *AssetStruct) StateFreeUpDisk(p0 context.Context) (*types.FreeUpDiskStateResp, error) {
 	if s.Internal.StateFreeUpDisk == nil {
-		return *new([]*types.FreeUpDiskState), ErrNotSupported
+		return nil, ErrNotSupported
 	}
 	return s.Internal.StateFreeUpDisk(p0)
 }
 
-func (s *AssetStub) StateFreeUpDisk(p0 context.Context) ([]*types.FreeUpDiskState, error) {
-	return *new([]*types.FreeUpDiskState), ErrNotSupported
+func (s *AssetStub) StateFreeUpDisk(p0 context.Context) (*types.FreeUpDiskStateResp, error) {
+	return nil, ErrNotSupported
 }
 
 func (s *AssetStruct) SyncAssetViewAndData(p0 context.Context) error {
@@ -1359,15 +1359,15 @@ func (s *NodeAPIStub) EdgeConnect(p0 context.Context, p1 *types.ConnectOptions) 
 	return ErrNotSupported
 }
 
-func (s *NodeAPIStruct) FreeUpDiskSpace(p0 context.Context, p1 string, p2 int64) ([]string, error) {
+func (s *NodeAPIStruct) FreeUpDiskSpace(p0 context.Context, p1 string, p2 int64) (*types.FreeUpDiskResp, error) {
 	if s.Internal.FreeUpDiskSpace == nil {
-		return *new([]string), ErrNotSupported
+		return nil, ErrNotSupported
 	}
 	return s.Internal.FreeUpDiskSpace(p0, p1, p2)
 }
 
-func (s *NodeAPIStub) FreeUpDiskSpace(p0 context.Context, p1 string, p2 int64) ([]string, error) {
-	return *new([]string), ErrNotSupported
+func (s *NodeAPIStub) FreeUpDiskSpace(p0 context.Context, p1 string, p2 int64) (*types.FreeUpDiskResp, error) {
+	return nil, ErrNotSupported
 }
 
 func (s *NodeAPIStruct) GenerateCandidateCode(p0 context.Context, p1 int, p2 types.NodeType) ([]string, error) {
@@ -1656,14 +1656,14 @@ func (s *NodeAPIStub) PerformSyncData(p0 context.Context, p1 string) error {
 	return ErrNotSupported
 }
 
-func (s *NodeAPIStruct) ReDetermineNodeNATType(p0 context.Context, p1 string) (error) {
+func (s *NodeAPIStruct) ReDetermineNodeNATType(p0 context.Context, p1 string) error {
 	if s.Internal.ReDetermineNodeNATType == nil {
 		return ErrNotSupported
 	}
 	return s.Internal.ReDetermineNodeNATType(p0, p1)
 }
 
-func (s *NodeAPIStub) ReDetermineNodeNATType(p0 context.Context, p1 string) (error) {
+func (s *NodeAPIStub) ReDetermineNodeNATType(p0 context.Context, p1 string) error {
 	return ErrNotSupported
 }
 

@@ -538,6 +538,11 @@ func (clib *CLib) reqFreeUpDisk(jsonStr string) *JSONCallResult {
 	return &JSONCallResult{Code: 0, Msg: "ok"}
 }
 
+type stateFreeUpDiskResp struct {
+	WaitingList []*types.FreeUpDiskState `json:"waitingList"`
+	NextTime    int64                    `json:"nextTime"`
+}
+
 func (clib *CLib) stateFreeUpDisk() *JSONCallResult {
 	edgeApi, closer, err := newEdgeAPI(clib.repoPath)
 	if err != nil {
@@ -545,13 +550,18 @@ func (clib *CLib) stateFreeUpDisk() *JSONCallResult {
 	}
 	defer closer()
 
-	waitingList, err := edgeApi.StateFreeUpDisk(context.Background())
+	ret, err := edgeApi.StateFreeUpDisk(context.Background())
 	if err != nil {
-		return &JSONCallResult{Code: -1, Msg: fmt.Sprintf("state free up disk error %s", err.Error())}
+		return &JSONCallResult{Code: -1, Msg: fmt.Sprintf("state free up disk error %s", err.Error()), Data: jsonStr(stateFreeUpDiskResp{WaitingList: ret.Hashes, NextTime: ret.NextTime})}
 	}
 
-	if len(waitingList) == 0 {
+	if len(ret.Hashes) == 0 {
 		return &JSONCallResult{Code: 0, Msg: "ok"}
 	}
 	return &JSONCallResult{Code: -1, Msg: "free up task is still in progress"}
+}
+
+func jsonStr(v any) string {
+	str, _ := json.Marshal(v)
+	return string(str)
 }

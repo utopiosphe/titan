@@ -9,7 +9,8 @@ import (
 // releaser contains releasing files and error info
 type releaser struct {
 	*sync.Mutex
-	files map[string]*releaserState
+	files    map[string]*releaserState
+	nextTime int64
 }
 
 type releaserState struct {
@@ -37,9 +38,17 @@ func (r *releaser) count() int {
 }
 
 func (r *releaser) initFiles(hashes []string) {
+	r.Lock()
+	defer r.Unlock()
 	for _, hash := range hashes {
 		r.files[hash] = &releaserState{}
 	}
+}
+
+func (r *releaser) setNextTime(time int64) {
+	r.Lock()
+	defer r.Unlock()
+	r.nextTime = time
 }
 
 func (r *releaser) setFile(hash string, err error) {
@@ -59,8 +68,6 @@ func (r *releaser) setFile(hash string, err error) {
 }
 
 func (r *releaser) load() (ret []*types.FreeUpDiskState) {
-	r.Lock()
-	defer r.Unlock()
 	for hash, v := range r.files {
 		ret = append(ret, &types.FreeUpDiskState{
 			Hash:   hash,
