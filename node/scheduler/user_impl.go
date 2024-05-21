@@ -452,19 +452,16 @@ func (s *Scheduler) GetNodeUploadInfo(ctx context.Context, userID string) (*type
 		return nil, &api.ErrWeb{Code: terrors.NodeOffline.Int(), Message: fmt.Sprintf("storage's nodes not found")}
 	}
 
-	payload := &types.AuthUserUploadDownloadAsset{
-		UserID:     userID,
-		Expiration: time.Now().Add(time.Hour),
-	}
+	payload := &types.JWTPayload{Allow: []auth.Permission{api.RoleUser}, ID: userID}
 
-	token, err := cNode.API.CreateAsset(context.Background(), payload)
+	token, err := cNode.API.AuthNew(context.Background(), payload)
 	if err != nil {
 		return nil, &api.ErrWeb{Code: terrors.RequestNodeErr.Int(), Message: err.Error()}
 	}
 
-	uploadURL := fmt.Sprintf("http://%s/upload", cNode.RemoteAddr)
+	uploadURL := fmt.Sprintf("http://%s/uploadv2", cNode.RemoteAddr)
 	if len(cNode.ExternalURL) > 0 {
-		uploadURL = fmt.Sprintf("%s/upload", cNode.ExternalURL)
+		uploadURL = fmt.Sprintf("%s/uploadv2", cNode.ExternalURL)
 	}
 
 	return &types.UploadInfo{UploadURL: uploadURL, Token: token, NodeID: cNode.NodeID}, nil

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Filecoin-Titan/titan/api"
+	"github.com/Filecoin-Titan/titan/lib/carutil"
 	"github.com/Filecoin-Titan/titan/lib/limiter"
 	"github.com/Filecoin-Titan/titan/node/asset/storage"
 	"github.com/aws/aws-sdk-go/aws"
@@ -148,7 +149,7 @@ func (ac *awsClient) pullAssetFromAWS(ctx context.Context, bucket, key string) (
 	}
 
 	tempCarFile := path.Join(assetDir, uuid.NewString())
-	rootCID, err := createCar(assetTempDirPath, tempCarFile)
+	rootCID, err := carutil.CreateCar(assetTempDirPath, tempCarFile)
 	if err != nil {
 		return cid.Cid{}, 0, err
 	}

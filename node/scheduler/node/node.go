@@ -194,10 +194,6 @@ func (n *Node) IsAbnormal() bool {
 		return true
 	}
 
-	if n.IsStorageOnly {
-		return true
-	}
-
 	return false
 }
 

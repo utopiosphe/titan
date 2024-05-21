@@ -1115,6 +1115,11 @@ func (m *Manager) chooseCandidateNodes(count int, filterNodes []string) (map[str
 		if node.Type == types.NodeValidator {
 			continue
 		}
+
+		if node.IsStorageOnly {
+			continue
+		}
+
 		nodeID := node.NodeID
 
 		if _, exist := filterMap[nodeID]; exist {
