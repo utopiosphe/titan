@@ -1307,7 +1307,7 @@ func (s *Scheduler) GetProfitDetailsForNode(ctx context.Context, nodeID string, 
 }
 
 // Interval for initiating free space release
-var FreeUpDayInterval = 5
+var FreeUpDayInterval = 1
 
 // FreeUpDiskSpace Request to free up disk space, returns file hashes and next time
 func (s *Scheduler) FreeUpDiskSpace(ctx context.Context, nodeID string, size int64) (*types.FreeUpDiskResp, error) {

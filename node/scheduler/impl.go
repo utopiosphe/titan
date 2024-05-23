@@ -223,6 +223,11 @@ func (s *Scheduler) nodeConnect(ctx context.Context, opts *types.ConnectOptions,
 	cNode.DownloadTraffic = nodeInfo.DownloadTraffic
 	cNode.UploadTraffic = nodeInfo.UploadTraffic
 
+	// limit node availableDiskSpace to 5 GiB when using phone
+	if cNode.IsPhone && nodeInfo.AvailableDiskSpace > float64(5*units.GiB) {
+		cNode.AvailableDiskSpace = float64(5 * units.GiB)
+	}
+
 	if !alreadyConnect {
 		version, err := cNode.API.Version(ctx)
 		if err != nil {
