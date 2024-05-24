@@ -46,6 +46,9 @@ const (
 	diskSpaceLimit     = 500 * units.TiB
 	bandwidthUpLimit   = 200 * units.MiB
 	availableDiskLimit = 2 * units.TiB
+
+	validatorCpuLimit    = 8
+	validatorMemoryLimit = 8 * units.GiB
 )
 
 // Scheduler represents a scheduler node in a distributed system.
@@ -117,7 +120,15 @@ func (s *Scheduler) nodeConnect(ctx context.Context, opts *types.ConnectOptions,
 		for _, nID := range s.SchedulerCfg.StorageCandidates {
 			if nID == nodeID {
 				cNode.IsStorageOnly = true
+				break
 			}
+		}
+	}
+
+	if len(s.SchedulerCfg.TestCandidates) > 0 {
+		_, exist := s.SchedulerCfg.TestCandidates[nodeID]
+		if exist {
+			cNode.IsTestNode = true
 		}
 	}
 
@@ -150,12 +161,14 @@ func (s *Scheduler) nodeConnect(ctx context.Context, opts *types.ConnectOptions,
 	}
 
 	if nodeType == types.NodeCandidate {
+		cNode.MeetCandidateStandard = cNode.IsTestNode || (nodeInfo.Memory > validatorMemoryLimit && nodeInfo.CPUCores > validatorCpuLimit)
+
 		isValidator, err := s.db.IsValidator(nodeID)
 		if err != nil {
 			return xerrors.Errorf("nodeConnect %s IsValidator err:%s", nodeID, err.Error())
 		}
 
-		if isValidator {
+		if isValidator && cNode.MeetCandidateStandard {
 			nodeType = types.NodeValidator
 		}
 		nodeInfo.AvailableDiskSpace = nodeInfo.DiskSpace * 0.9
@@ -184,6 +197,18 @@ func (s *Scheduler) nodeConnect(ctx context.Context, opts *types.ConnectOptions,
 		return xerrors.Errorf("LoadReplicaSizeByNodeID %s err:%s", nodeID, err.Error())
 	}
 
+	cNode.IsPhone = isPhone(nodeInfo.SystemVersion, nodeInfo.CPUInfo, s.SchedulerCfg.AndroidSymbol, s.SchedulerCfg.IOSSymbol)
+	// limit node availableDiskSpace to 5 GiB when using phone
+	if cNode.IsPhone {
+		if nodeInfo.AvailableDiskSpace > float64(5*units.GiB) {
+			cNode.AvailableDiskSpace = float64(5 * units.GiB)
+		}
+
+		if size > 5*units.GiB {
+			size = 5 * units.GiB
+		}
+	}
+
 	nodeInfo.TitanDiskUsage = float64(size)
 	if nodeInfo.AvailableDiskSpace < float64(size) {
 		nodeInfo.AvailableDiskSpace = float64(roundUpToNextGB(size))
@@ -203,8 +228,6 @@ func (s *Scheduler) nodeConnect(ctx context.Context, opts *types.ConnectOptions,
 			return xerrors.Errorf("The node %s has been deactivate and cannot be logged in", nodeID)
 		}
 	}
-
-	cNode.IsPhone = isPhone(nodeInfo.SystemVersion, nodeInfo.CPUInfo, s.SchedulerCfg.AndroidSymbol, s.SchedulerCfg.IOSSymbol)
 
 	cNode.BandwidthDown = nodeInfo.BandwidthDown
 	cNode.BandwidthUp = nodeInfo.BandwidthUp
@@ -290,14 +313,6 @@ func checkNodeParameters(nodeInfo *types.NodeInfo) error {
 	if nodeInfo.DiskSpace > diskSpaceLimit || nodeInfo.DiskSpace < 0 {
 		return xerrors.Errorf("checkNodeParameters [%s] DiskSpace [%.2f]", nodeInfo.NodeID, nodeInfo.DiskSpace)
 	}
-
-	// if nodeInfo.AvailableDiskSpace > nodeInfo.DiskSpace {
-	// 	return xerrors.Errorf("checkNodeParameters [%s] AvailableDiskSpace [%.2f] > DiskSpace [%.2f]", nodeInfo.NodeID, nodeInfo.AvailableDiskSpace, nodeInfo.DiskSpace)
-	// }
-
-	// if nodeInfo.AvailableDiskSpace < float64(tDiskUsage) {
-	// 	return xerrors.Errorf("checkNodeParameters [%s] AvailableDiskSpace [%.2f] < tDiskUsage [%d]", nodeInfo.NodeID, nodeInfo.AvailableDiskSpace, tDiskUsage)
-	// }
 
 	if nodeInfo.BandwidthDown < 0 {
 		return xerrors.Errorf("checkNodeParameters [%s] BandwidthDown [%d]", nodeInfo.NodeID, nodeInfo.BandwidthDown)

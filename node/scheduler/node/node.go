@@ -43,7 +43,6 @@ type Node struct {
 
 	NATType        types.NatType
 	CPUUsage       float64
-	MemoryUsage    float64
 	DiskUsage      float64
 	TitanDiskUsage float64
 
@@ -71,7 +70,10 @@ type Node struct {
 
 	IsNewVersion bool
 
-	IsPhone bool
+	IsPhone    bool
+	IsTestNode bool
+
+	MeetCandidateStandard bool
 }
 
 // API represents the node API

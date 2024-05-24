@@ -248,6 +248,10 @@ func (m *Manager) requestNodePullAsset(bucket, cid string, candidateCount int64)
 			continue
 		}
 
+		if !node.MeetCandidateStandard {
+			continue
+		}
+
 		if exist, err := m.checkAssetIfExist(node, cid); err != nil {
 			// log.Warnf("requestNodePullAsset checkAssetIfExist error %s", err)
 			continue

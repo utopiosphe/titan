@@ -1120,6 +1120,10 @@ func (m *Manager) chooseCandidateNodes(count int, filterNodes []string) (map[str
 			continue
 		}
 
+		if !node.MeetCandidateStandard {
+			continue
+		}
+
 		nodeID := node.NodeID
 
 		if _, exist := filterMap[nodeID]; exist {

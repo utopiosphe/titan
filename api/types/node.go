@@ -27,6 +27,7 @@ type NodeDynamicInfo struct {
 
 // NodeInfo contains information about a node.
 type NodeInfo struct {
+	IsTestNode    bool
 	Type          NodeType
 	ExternalIP    string
 	InternalIP    string

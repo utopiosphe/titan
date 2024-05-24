@@ -414,7 +414,6 @@ func (s *Scheduler) GetNodeInfo(ctx context.Context, nodeID string) (types.NodeI
 		nodeInfo.Status = nodeStatus(node)
 		nodeInfo.NATType = node.NATType.String()
 		nodeInfo.Type = node.Type
-		nodeInfo.MemoryUsage = node.MemoryUsage
 		nodeInfo.CPUUsage = node.CPUUsage
 		nodeInfo.DiskUsage = node.DiskUsage
 		nodeInfo.BandwidthDown = node.BandwidthDown
@@ -424,6 +423,7 @@ func (s *Scheduler) GetNodeInfo(ctx context.Context, nodeID string) (types.NodeI
 		nodeInfo.TitanDiskUsage = node.TitanDiskUsage
 		nodeInfo.NetFlowUp = node.NetFlowUp
 		nodeInfo.NetFlowDown = node.NetFlowDown
+		nodeInfo.IsTestNode = node.IsTestNode
 
 		log.Debugf("%s node select codes:%v , url:%s", nodeID, node.SelectWeights(), node.ExternalURL)
 	}
@@ -455,7 +455,6 @@ func (s *Scheduler) GetNodeList(ctx context.Context, offset int, limit int) (*ty
 			nodeInfo.Status = nodeStatus(node)
 			nodeInfo.NATType = node.NATType.String()
 			nodeInfo.Type = node.Type
-			nodeInfo.MemoryUsage = node.MemoryUsage
 			nodeInfo.CPUUsage = node.CPUUsage
 			nodeInfo.DiskUsage = node.DiskUsage
 			nodeInfo.BandwidthDown = node.BandwidthDown
@@ -465,6 +464,7 @@ func (s *Scheduler) GetNodeList(ctx context.Context, offset int, limit int) (*ty
 			nodeInfo.TitanDiskUsage = node.TitanDiskUsage
 			nodeInfo.NetFlowUp = node.NetFlowUp
 			nodeInfo.NetFlowDown = node.NetFlowDown
+			nodeInfo.IsTestNode = node.IsTestNode
 		}
 
 		// _, exist := validator[nodeInfo.NodeID]

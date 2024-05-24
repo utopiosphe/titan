@@ -8,6 +8,7 @@ import (
 	"github.com/Filecoin-Titan/titan/api/types"
 	"github.com/Filecoin-Titan/titan/lib/etcdcli"
 	"github.com/Filecoin-Titan/titan/node/modules/dtypes"
+	"github.com/docker/go-units"
 	"github.com/filecoin-project/pubsub"
 
 	"github.com/Filecoin-Titan/titan/node/scheduler/db"
@@ -550,6 +551,12 @@ func (m *Manager) UpdateNodeDiskUsage(nodeID string, diskUsage float64) {
 	if err != nil {
 		log.Errorf("LoadReplicaSizeByNodeID %s err:%s", nodeID, err.Error())
 		return
+	}
+
+	if node.IsPhone {
+		if size > 5*units.GiB {
+			size = 5 * units.GiB
+		}
 	}
 
 	node.TitanDiskUsage = float64(size)

@@ -110,12 +110,4 @@ func InitTables(d *SQLDB, serverID dtypes.ServerID) error {
 }
 
 func doExec(d *SQLDB) {
-	_, err := d.db.Exec(fmt.Sprintf("ALTER TABLE %s ADD netflow_up  BIGINT  DEFAULT 0;", nodeInfoTable))
-	if err != nil {
-		log.Errorf("InitTables doExec err:%s", err.Error())
-	}
-	_, err = d.db.Exec(fmt.Sprintf("ALTER TABLE %s ADD netflow_down  BIGINT  DEFAULT 0;", nodeInfoTable))
-	if err != nil {
-		log.Errorf("InitTables doExec err:%s", err.Error())
-	}
 }

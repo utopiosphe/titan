@@ -9,6 +9,7 @@ import (
 var (
 	firstElectionInterval = 10 * time.Minute   // Time of the first election
 	electionCycle         = 1 * 24 * time.Hour // Election cycle
+
 )
 
 func getTimeAfter(t time.Duration) time.Time {
