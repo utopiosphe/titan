@@ -46,8 +46,15 @@ type DeviceRunningStat struct {
 
 	// ProcessBandWidthUp   int64
 	// ProcessBandWidthDown int64
-	NicBandWidthUp   int64 // network interface card bandwidth
-	NicBandWidthDown int64
+	NicBandWidthUp    int64 // network interface card bandwidth
+	NicBandWidthUpMax int64
+	NicBandWidthUpAvg int64
+	NicBandWidthUpMin int64
+
+	NicBandWidthDown   int64
+	NicBandWidthDowMax int64
+	NicBandWidthDowAvg int64
+	NicBandWidthDowMin int64
 
 	LastSampleTime time.Time
 }
@@ -715,7 +722,16 @@ type KeepaliveRsp struct {
 }
 
 // KeepaliveReq keepalive requests.
-type KeepaliveReq struct{}
+type KeepaliveReq struct {
+	Free      FlowUnit
+	Peak      FlowUnit
+	TaskCount int16
+}
+
+type FlowUnit struct {
+	U int64
+	D int64
+}
 
 type ServiceType int
 
