@@ -906,6 +906,12 @@ func (n *SQLDB) CleanData() {
 		log.Warnf("CleanData nodeRetrieveTable err:%s", err.Error())
 	}
 
+	query = fmt.Sprintf(`DELETE FROM %s WHERE start_time<DATE_SUB(NOW(), INTERVAL 30 DAY) `, serviceEventTable)
+	_, err = n.db.Exec(query)
+	if err != nil {
+		log.Warnf("CleanData serviceEventTable err:%s", err.Error())
+	}
+
 	// query = fmt.Sprintf(`DELETE FROM %s WHERE created_time<DATE_SUB(NOW(), INTERVAL 30 DAY) `, bandwidthScoreEventTable)
 	// _, err = n.db.Exec(query)
 	// if err != nil {

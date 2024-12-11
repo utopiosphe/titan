@@ -441,6 +441,8 @@ type NodeAPIStruct struct {
 
 		NodeKeepaliveV2 func(p0 context.Context) (uuid.UUID, error) `perm:"edge,candidate,l5"`
 
+		NodeKeepaliveV3 func(p0 context.Context, p1 *types.KeepaliveReq) (*types.KeepaliveRsp, error) `perm:"edge,candidate,l5"`
+
 		NodeLogin func(p0 context.Context, p1 string, p2 string) (string, error) `perm:"default"`
 
 		PerformSyncData func(p0 context.Context, p1 string) (error) `perm:"admin"`
@@ -2121,6 +2123,17 @@ func (s *NodeAPIStruct) NodeKeepaliveV2(p0 context.Context) (uuid.UUID, error) {
 
 func (s *NodeAPIStub) NodeKeepaliveV2(p0 context.Context) (uuid.UUID, error) {
 	return *new(uuid.UUID), ErrNotSupported
+}
+
+func (s *NodeAPIStruct) NodeKeepaliveV3(p0 context.Context, p1 *types.KeepaliveReq) (*types.KeepaliveRsp, error) {
+	if s.Internal.NodeKeepaliveV3 == nil {
+		return nil, ErrNotSupported
+	}
+	return s.Internal.NodeKeepaliveV3(p0, p1)
+}
+
+func (s *NodeAPIStub) NodeKeepaliveV3(p0 context.Context, p1 *types.KeepaliveReq) (*types.KeepaliveRsp, error) {
+	return nil, ErrNotSupported
 }
 
 func (s *NodeAPIStruct) NodeLogin(p0 context.Context, p1 string, p2 string) (string, error) {

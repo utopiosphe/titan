@@ -172,17 +172,5 @@ func doExec(d *SQLDB, serverID dtypes.ServerID) {
 	// }
 
 	// ALTER TABLE node_info ADD nat_type             VARCHAR(32)     DEFAULT 'UnknowNAT';
-
-	_, err := d.db.Exec(fmt.Sprintf("ALTER TABLE %s ADD trace_id      VARCHAR(128) DEFAULT ''", serviceEventTable))
-	if err != nil {
-		log.Errorf("InitTables doExec err:%s", err.Error())
-	}
-	_, err = d.db.Exec(fmt.Sprintf("ALTER TABLE %s ADD speed         BIGINT       DEFAULT 0", serviceEventTable))
-	if err != nil {
-		log.Errorf("InitTables doExec err:%s", err.Error())
-	}
-	_, err = d.db.Exec(fmt.Sprintf("ALTER TABLE %s ADD score         INT          DEFAULT 0", serviceEventTable))
-	if err != nil {
-		log.Errorf("InitTables doExec err:%s", err.Error())
-	}
+	// Drop table service_event;
 }

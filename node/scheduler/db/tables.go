@@ -433,7 +433,9 @@ var cServiceEventTable = `
 	    KEY idx_node_id (node_id),
 	    KEY idx_type (type),
 	    KEY idx_status (status),
-	    KEY idx_end_time (end_time)
+	    KEY idx_start_time (start_time),
+	    KEY idx_end_time (end_time),
+	    KEY idx_trace_id (trace_id)
     ) ENGINE=InnoDB COMMENT='node service event';`
 
 // var cDeploymentTable = `

@@ -94,3 +94,158 @@ func generatePairs(nodes []*NodeInfo, round int) []NodePair {
 
 	return pairs
 }
+
+type ServiceType int
+
+const (
+	ServiceTypeUpload ServiceType = iota
+	ServiceTypeDownload
+)
+
+type ServiceStatus int
+
+const (
+	ServiceTypeSucceed ServiceStatus = iota
+	ServiceTypeFailed
+)
+
+type ServiceEvent struct {
+	TraceID   string        `db:"trace_id"`
+	NodeID    string        `db:"node_id"`
+	Type      ServiceType   `db:"type"`
+	Size      int64         `db:"size"`
+	Status    ServiceStatus `db:"status"`
+	Peak      int64         `db:"peak"`
+	EndTime   time.Time     `db:"end_time"`
+	StartTime time.Time     `db:"start_time"`
+	Speed     int64         `db:"speed"`
+
+	Score int64 `db:"score"`
+}
+
+type ServiceStats struct {
+	NodeID               string
+	UploadSuccessCount   int64
+	UploadTotalCount     int64
+	UploadFailCount      int64
+	UploadAvgSpeed       int64
+	DownloadSuccessCount int64
+	DownloadTotalCount   int64
+	DownloadFailCount    int64
+	DownloadAvgSpeed     int64
+	AvgScore             int64
+
+	DownloadSpeeds []int64
+	UploadSpeeds   []int64
+	Scores         []int64
+}
+
+func TestXxx3(t *testing.T) {
+	stats := getStats(getEvents())
+
+	for _, info := range stats {
+		fmt.Printf("Node[%s] upload:[%d]/[%d]/[%d] [%d] download:[%d]/[%d]/[%d] [%d] score:[%d] \n",
+			info.NodeID,
+			info.UploadSuccessCount, info.UploadFailCount, info.UploadTotalCount, info.UploadAvgSpeed,
+			info.DownloadSuccessCount, info.DownloadFailCount, info.DownloadTotalCount, info.DownloadAvgSpeed,
+			info.AvgScore)
+	}
+}
+
+func getEvents() []*ServiceEvent {
+	return []*ServiceEvent{
+		{NodeID: "Node_1", Type: ServiceTypeUpload, Status: ServiceTypeSucceed, Speed: 100000, Score: 20},
+		{NodeID: "Node_1", Type: ServiceTypeUpload, Status: ServiceTypeFailed, Speed: 100000, Score: 20},
+		{NodeID: "Node_1", Type: ServiceTypeUpload, Status: ServiceTypeSucceed, Speed: 20000, Score: 5},
+		{NodeID: "Node_1", Type: ServiceTypeUpload, Status: ServiceTypeFailed, Speed: 100000, Score: 20},
+		{NodeID: "Node_1", Type: ServiceTypeUpload, Status: ServiceTypeSucceed, Speed: 500000, Score: 50},
+		{NodeID: "Node_1", Type: ServiceTypeUpload, Status: ServiceTypeFailed, Speed: 100000, Score: 20},
+		{NodeID: "Node_1", Type: ServiceTypeDownload, Status: ServiceTypeSucceed, Speed: 100000, Score: 20},
+		{NodeID: "Node_1", Type: ServiceTypeDownload, Status: ServiceTypeFailed, Speed: 100000, Score: 20},
+		{NodeID: "Node_1", Type: ServiceTypeDownload, Status: ServiceTypeSucceed, Speed: 20000, Score: 5},
+		{NodeID: "Node_1", Type: ServiceTypeDownload, Status: ServiceTypeFailed, Speed: 100000, Score: 20},
+		{NodeID: "Node_1", Type: ServiceTypeDownload, Status: ServiceTypeSucceed, Speed: 300000, Score: 20},
+
+		{NodeID: "Node_2", Type: ServiceTypeUpload, Status: ServiceTypeSucceed, Speed: 500, Score: 3},
+		{NodeID: "Node_2", Type: ServiceTypeUpload, Status: ServiceTypeFailed, Speed: 100000, Score: 20},
+		{NodeID: "Node_2", Type: ServiceTypeUpload, Status: ServiceTypeSucceed, Speed: 20000, Score: 5},
+		{NodeID: "Node_2", Type: ServiceTypeUpload, Status: ServiceTypeFailed, Speed: 100000, Score: 20},
+		{NodeID: "Node_2", Type: ServiceTypeDownload, Status: ServiceTypeFailed, Speed: 100000, Score: 20},
+		{NodeID: "Node_2", Type: ServiceTypeDownload, Status: ServiceTypeSucceed, Speed: 300000, Score: 20},
+
+		{NodeID: "Node_3", Type: ServiceTypeUpload, Status: ServiceTypeSucceed, Speed: 20000, Score: 5},
+		{NodeID: "Node_3", Type: ServiceTypeUpload, Status: ServiceTypeFailed, Speed: 100000, Score: 20},
+		{NodeID: "Node_3", Type: ServiceTypeDownload, Status: ServiceTypeFailed, Speed: 100000, Score: 20},
+	}
+}
+
+func getStats(events []*ServiceEvent) map[string]*ServiceStats {
+	nodeStats := make(map[string]*ServiceStats)
+
+	for _, event := range events {
+		nodeID := event.NodeID
+
+		statsInfo, ok := nodeStats[nodeID]
+		if !ok {
+			statsInfo = &ServiceStats{NodeID: nodeID, DownloadSpeeds: []int64{}, UploadSpeeds: []int64{}, Scores: []int64{}}
+			nodeStats[nodeID] = statsInfo
+		}
+
+		if event.Type == ServiceTypeUpload { // Upload
+			statsInfo.UploadTotalCount++
+
+			if event.Status == ServiceTypeSucceed {
+				statsInfo.UploadSuccessCount++
+				statsInfo.UploadSpeeds = append(statsInfo.UploadSpeeds, event.Speed)
+				statsInfo.Scores = append(statsInfo.Scores, event.Score)
+			} else if event.Status == ServiceTypeFailed {
+				statsInfo.UploadFailCount++
+			}
+		} else if event.Type == ServiceTypeDownload { // Download
+			statsInfo.DownloadTotalCount++
+
+			if event.Status == ServiceTypeSucceed {
+				statsInfo.DownloadSuccessCount++
+				statsInfo.DownloadSpeeds = append(statsInfo.DownloadSpeeds, event.Speed)
+				statsInfo.Scores = append(statsInfo.Scores, event.Score)
+			} else if event.Status == ServiceTypeFailed {
+				statsInfo.DownloadFailCount++
+			}
+		}
+	}
+
+	for _, stats := range nodeStats {
+		if len(stats.DownloadSpeeds) > 0 {
+			total := int64(0)
+			for _, value := range stats.DownloadSpeeds {
+				total += value
+			}
+
+			stats.DownloadAvgSpeed = total / int64(len(stats.DownloadSpeeds))
+		}
+
+		if len(stats.UploadSpeeds) > 0 {
+			total := int64(0)
+			for _, value := range stats.UploadSpeeds {
+				total += value
+			}
+
+			stats.UploadAvgSpeed = total / int64(len(stats.UploadSpeeds))
+		}
+
+		if len(stats.Scores) > 0 {
+			total := int64(0)
+			for _, value := range stats.Scores {
+				total += value
+			}
+
+			stats.AvgScore = total / int64(len(stats.Scores))
+		}
+
+		stats.DownloadSpeeds = nil
+		stats.UploadSpeeds = nil
+		stats.Scores = nil
+	}
+
+	return nodeStats
+}

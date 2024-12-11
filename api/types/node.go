@@ -714,6 +714,9 @@ type KeepaliveRsp struct {
 	ErrMsg    string
 }
 
+// KeepaliveReq keepalive requests.
+type KeepaliveReq struct{}
+
 type ServiceType int
 
 const (
@@ -740,4 +743,21 @@ type ServiceEvent struct {
 	Speed     int64         `db:"speed"`
 
 	Score int64 `db:"score"`
+}
+
+type ServiceStats struct {
+	NodeID               string
+	UploadSuccessCount   int64
+	UploadTotalCount     int64
+	UploadFailCount      int64
+	UploadAvgSpeed       int64
+	DownloadSuccessCount int64
+	DownloadTotalCount   int64
+	DownloadFailCount    int64
+	DownloadAvgSpeed     int64
+	AvgScore             int64
+
+	DownloadSpeeds []int64
+	UploadSpeeds   []int64
+	Scores         []int64
 }

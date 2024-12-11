@@ -316,42 +316,58 @@ func (n *SQLDB) LoadReplicaEventsByHash(hash string, status types.ReplicaEvent, 
 	return res, nil
 }
 
-func (n *SQLDB) saveServiceEvent(tx *sqlx.Tx, info *types.ServiceEvent) error {
-	qry := fmt.Sprintf(`INSERT INTO %s (trace_id, node_id, info, size, status, peak, end_time, start_time, speed, score) 
-		        VALUES (:trace_id, :node_id, :info, :size, :status, :peak, :end_time, :start_time, :speed, :score)`, serviceEventTable)
-	_, err := tx.NamedExec(qry, info)
+// func (n *SQLDB) saveServiceEvent(tx *sqlx.Tx, info *types.ServiceEvent) error {
+// 	qry := fmt.Sprintf(`INSERT INTO %s (trace_id, node_id, info, size, status, peak, end_time, start_time, speed, score)
+// 		        VALUES (:trace_id, :node_id, :info, :size, :status, :peak, :end_time, :start_time, :speed, :score)`, serviceEventTable)
+// 	_, err := tx.NamedExec(qry, info)
 
-	return err
-}
+// 	return err
+// }
 
 // SaveServiceEvent logs a replica event with detailed event information into the database.
 func (n *SQLDB) SaveServiceEvent(info *types.ServiceEvent) error {
-	tx, err := n.db.Beginx()
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		err = tx.Rollback()
-		if err != nil && err != sql.ErrTxDone {
-			log.Errorf("SaveProjectEvent Rollback err:%s", err.Error())
-		}
-	}()
-
-	// update node project count
-	// query := fmt.Sprintf(
-	// 	`INSERT INTO %s (node_id, project_count, project_succeeded_count, project_failed_count) VALUES (?, ?, ?, ?)
-	// 			ON DUPLICATE KEY UPDATE project_count=project_count+? ,project_succeeded_count=project_succeeded_count+?, project_failed_count=project_failed_count+?, update_time=NOW()`, nodeStatisticsTable)
-	// _, err = tx.Exec(query, info.NodeID, 1, succeededCount, failedCount, 1, succeededCount, failedCount)
+	qry := fmt.Sprintf(`INSERT INTO %s (trace_id, node_id, info, size, status, peak, end_time, start_time, speed, score) 
+		        VALUES (:trace_id, :node_id, :info, :size, :status, :peak, :end_time, :start_time, :speed, :score)`, serviceEventTable)
+	_, err := n.db.NamedExec(qry, info)
+	return err
+	// tx, err := n.db.Beginx()
 	// if err != nil {
 	// 	return err
 	// }
 
-	// replica event
-	err = n.saveServiceEvent(tx, info)
+	// defer func() {
+	// 	err = tx.Rollback()
+	// 	if err != nil && err != sql.ErrTxDone {
+	// 		log.Errorf("SaveProjectEvent Rollback err:%s", err.Error())
+	// 	}
+	// }()
+
+	// // update node project count
+	// // query := fmt.Sprintf(
+	// // 	`INSERT INTO %s (node_id, project_count, project_succeeded_count, project_failed_count) VALUES (?, ?, ?, ?)
+	// // 			ON DUPLICATE KEY UPDATE project_count=project_count+? ,project_succeeded_count=project_succeeded_count+?, project_failed_count=project_failed_count+?, update_time=NOW()`, nodeStatisticsTable)
+	// // _, err = tx.Exec(query, info.NodeID, 1, succeededCount, failedCount, 1, succeededCount, failedCount)
+	// // if err != nil {
+	// // 	return err
+	// // }
+
+	// // replica event
+	// err = n.saveServiceEvent(tx, info)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// return tx.Commit()
+}
+
+func (n *SQLDB) LoadServiceEvents(startTime, endTime time.Time) ([]*types.ServiceEvent, error) {
+	var infos []*types.ServiceEvent
+	query := fmt.Sprintf("SELECT * FROM %s WHERE start_time BETWEEN ? AND ?", serviceEventTable)
+
+	err := n.db.Select(&infos, query, startTime, endTime)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return tx.Commit()
+	return infos, nil
 }

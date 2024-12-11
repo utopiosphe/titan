@@ -1165,6 +1165,70 @@ func (s *Scheduler) NodeExists(ctx context.Context, nodeID string) error {
 	return s.NodeManager.NodeExists(nodeID)
 }
 
+// NodeKeepaliveV3 candidate and edge keepalive
+func (s *Scheduler) NodeKeepaliveV3(ctx context.Context, req *types.KeepaliveReq) (*types.KeepaliveRsp, error) {
+	uuid, err := s.CommonAPI.Session(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	nodeID := handler.GetNodeID(ctx)
+	if len(nodeID) == 0 {
+		return nil, fmt.Errorf("Can not get nodeID from request")
+	}
+
+	node := s.NodeManager.GetNode(nodeID)
+	if node == nil {
+		return &types.KeepaliveRsp{ErrCode: int(terrors.NodeOffline), ErrMsg: fmt.Sprintf("node %s offline or not exist", nodeID)}, nil
+	}
+
+	if node.Type == types.NodeCandidate {
+		now := time.Now().Unix()
+		log.Infof("NodeKeepalive node [%s] DeactivateTime:[%d] , [%d] \n", nodeID, node.DeactivateTime, now)
+
+		if node.DeactivateTime > 0 && node.DeactivateTime < now {
+			return &types.KeepaliveRsp{ErrCode: int(terrors.NodeDeactivate), ErrMsg: fmt.Sprintf("The node %s has been deactivate and cannot be logged in", nodeID)}, nil
+		}
+	}
+
+	if node.ForceOffline {
+		return &types.KeepaliveRsp{ErrCode: int(terrors.ForceOffline), ErrMsg: fmt.Sprintf("The node %s has been forced offline", nodeID)}, nil
+	}
+
+	if node.Type == types.NodeCandidate {
+		if node.NATType == types.NatTypePortRestricted.String() || node.NATType == types.NatTypeRestricted.String() || node.NATType == types.NatTypeSymmetric.String() {
+			return nil, xerrors.Errorf("The NAT type [%s] of the node [%s] does not conform to the rules", node.NATType, nodeID)
+		}
+
+		if node.NATType != types.NatTypeUnknown.String() && !node.IsStorageNode && !node.IsTestNode {
+			return nil, xerrors.Errorf("%s checkDomain %s ", nodeID, node.ExternalURL)
+		}
+	}
+
+	lastTime := time.Now()
+	remoteAddr := handler.GetRemoteAddr(ctx)
+	if remoteAddr != node.RemoteAddr {
+		count, lastTime := node.GetNumberOfIPChanges()
+		duration := time.Now().Sub(lastTime)
+		seconds := duration.Seconds()
+
+		if seconds > 10*6*20 {
+			node.SetCountOfIPChanges(0)
+
+			if count > 120 {
+				log.Infof("NodeKeepaliveV2 Exceeded expectations %s , ip:%s : %s, count:%d ,resetSeconds:%.2f ", nodeID, remoteAddr, node.RemoteAddr, count, seconds)
+			}
+			return &types.KeepaliveRsp{ErrCode: int(terrors.NodeIPInconsistent), ErrMsg: fmt.Sprintf("node %s new ip %s, old ip %s, resetSeconds:%.2f , resetCount:%d", nodeID, remoteAddr, node.RemoteAddr, seconds, count)}, nil
+		}
+
+		count++
+		node.SetCountOfIPChanges(count)
+	}
+
+	node.SetLastRequestTime(lastTime)
+	return &types.KeepaliveRsp{SessionID: uuid.String()}, nil
+}
+
 // NodeKeepalive candidate and edge keepalive
 func (s *Scheduler) NodeKeepalive(ctx context.Context) (*types.KeepaliveRsp, error) {
 	uuid, err := s.CommonAPI.Session(ctx)
@@ -1874,7 +1938,84 @@ func (s *Scheduler) AddNodeServiceEvent(ctx context.Context, event *types.Servic
 	}
 
 	// TODO
-	// event.Score = ??
+	event.Score = 10
 
 	return s.db.SaveServiceEvent(event)
+}
+
+func (s *Scheduler) LoadServiceEvents(ctx context.Context, startTime, endTime time.Time) (map[string]*types.ServiceStats, error) {
+	// TODO cache
+	events, err := s.db.LoadServiceEvents(startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+
+	nodeStats := make(map[string]*types.ServiceStats)
+
+	for _, event := range events {
+		nodeID := event.NodeID
+
+		statsInfo, ok := nodeStats[nodeID]
+		if !ok {
+			statsInfo = &types.ServiceStats{NodeID: nodeID, DownloadSpeeds: []int64{}, UploadSpeeds: []int64{}, Scores: []int64{}}
+			nodeStats[nodeID] = statsInfo
+		}
+
+		if event.Type == types.ServiceTypeUpload { // Upload
+			statsInfo.UploadTotalCount++
+
+			if event.Status == types.ServiceTypeSucceed {
+				statsInfo.UploadSuccessCount++
+				statsInfo.UploadSpeeds = append(statsInfo.UploadSpeeds, event.Speed)
+				statsInfo.Scores = append(statsInfo.Scores, event.Score)
+			} else if event.Status == types.ServiceTypeFailed {
+				statsInfo.UploadFailCount++
+			}
+		} else if event.Type == types.ServiceTypeDownload { // Download
+			statsInfo.DownloadTotalCount++
+
+			if event.Status == types.ServiceTypeSucceed {
+				statsInfo.DownloadSuccessCount++
+				statsInfo.DownloadSpeeds = append(statsInfo.DownloadSpeeds, event.Speed)
+				statsInfo.Scores = append(statsInfo.Scores, event.Score)
+			} else if event.Status == types.ServiceTypeFailed {
+				statsInfo.DownloadFailCount++
+			}
+		}
+	}
+
+	for _, stats := range nodeStats {
+		if len(stats.DownloadSpeeds) > 0 {
+			total := int64(0)
+			for _, value := range stats.DownloadSpeeds {
+				total += value
+			}
+
+			stats.DownloadAvgSpeed = total / int64(len(stats.DownloadSpeeds))
+		}
+
+		if len(stats.UploadSpeeds) > 0 {
+			total := int64(0)
+			for _, value := range stats.UploadSpeeds {
+				total += value
+			}
+
+			stats.UploadAvgSpeed = total / int64(len(stats.UploadSpeeds))
+		}
+
+		if len(stats.Scores) > 0 {
+			total := int64(0)
+			for _, value := range stats.Scores {
+				total += value
+			}
+
+			stats.AvgScore = total / int64(len(stats.Scores))
+		}
+
+		stats.DownloadSpeeds = nil
+		stats.UploadSpeeds = nil
+		stats.Scores = nil
+	}
+
+	return nodeStats, nil
 }
