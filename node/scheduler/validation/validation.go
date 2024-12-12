@@ -143,8 +143,13 @@ func (m *Manager) startValidate() error {
 		return nil
 	}
 
+	// sort.Slice(candidates, func(i, j int) bool {
+	// 	return candidates[i].BandwidthDown < candidates[j].BandwidthDown
+	// })
+
+	// TODO New rules Sort by remaining bandwidth
 	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].BandwidthDown < candidates[j].BandwidthDown
+		return candidates[i].BandwidthFreeDown < candidates[j].BandwidthFreeDown
 	})
 
 	// mixup nodes

@@ -1182,26 +1182,28 @@ func (s *Scheduler) NodeKeepaliveV3(ctx context.Context, req *types.KeepaliveReq
 		return &types.KeepaliveRsp{ErrCode: int(terrors.NodeOffline), ErrMsg: fmt.Sprintf("node %s offline or not exist", nodeID)}, nil
 	}
 
-	if node.Type == types.NodeCandidate {
-		now := time.Now().Unix()
-		log.Infof("NodeKeepalive node [%s] DeactivateTime:[%d] , [%d] \n", nodeID, node.DeactivateTime, now)
-
-		if node.DeactivateTime > 0 && node.DeactivateTime < now {
-			return &types.KeepaliveRsp{ErrCode: int(terrors.NodeDeactivate), ErrMsg: fmt.Sprintf("The node %s has been deactivate and cannot be logged in", nodeID)}, nil
-		}
-	}
-
 	if node.ForceOffline {
 		return &types.KeepaliveRsp{ErrCode: int(terrors.ForceOffline), ErrMsg: fmt.Sprintf("The node %s has been forced offline", nodeID)}, nil
 	}
 
 	if node.Type == types.NodeCandidate {
+		now := time.Now().Unix()
+		log.Infof("NodeKeepaliveV3 node [%s] DeactivateTime:[%d] , [%d] \n", nodeID, node.DeactivateTime, now)
+
+		if node.DeactivateTime > 0 && node.DeactivateTime < now {
+			return &types.KeepaliveRsp{ErrCode: int(terrors.NodeDeactivate), ErrMsg: fmt.Sprintf("The node %s has been deactivate and cannot be logged in", nodeID)}, nil
+		}
+
 		if node.NATType == types.NatTypePortRestricted.String() || node.NATType == types.NatTypeRestricted.String() || node.NATType == types.NatTypeSymmetric.String() {
 			return nil, xerrors.Errorf("The NAT type [%s] of the node [%s] does not conform to the rules", node.NATType, nodeID)
 		}
 
 		if node.NATType != types.NatTypeUnknown.String() && !node.IsStorageNode && !node.IsTestNode {
 			return nil, xerrors.Errorf("%s checkDomain %s ", nodeID, node.ExternalURL)
+		}
+
+		if req != nil {
+			node.SetBandwidths(req.Free, req.Peak)
 		}
 	}
 
@@ -1216,7 +1218,7 @@ func (s *Scheduler) NodeKeepaliveV3(ctx context.Context, req *types.KeepaliveReq
 			node.SetCountOfIPChanges(0)
 
 			if count > 120 {
-				log.Infof("NodeKeepaliveV2 Exceeded expectations %s , ip:%s : %s, count:%d ,resetSeconds:%.2f ", nodeID, remoteAddr, node.RemoteAddr, count, seconds)
+				log.Infof("NodeKeepaliveV3 Exceeded expectations %s , ip:%s : %s, count:%d ,resetSeconds:%.2f ", nodeID, remoteAddr, node.RemoteAddr, count, seconds)
 			}
 			return &types.KeepaliveRsp{ErrCode: int(terrors.NodeIPInconsistent), ErrMsg: fmt.Sprintf("node %s new ip %s, old ip %s, resetSeconds:%.2f , resetCount:%d", nodeID, remoteAddr, node.RemoteAddr, seconds, count)}, nil
 		}
@@ -1226,7 +1228,7 @@ func (s *Scheduler) NodeKeepaliveV3(ctx context.Context, req *types.KeepaliveReq
 	}
 
 	node.SetLastRequestTime(lastTime)
-	return &types.KeepaliveRsp{SessionID: uuid.String()}, nil
+	return &types.KeepaliveRsp{SessionID: uuid.String(), SessionUUID: uuid}, nil
 }
 
 // NodeKeepalive candidate and edge keepalive

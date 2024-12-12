@@ -723,8 +723,13 @@ func (s *Scheduler) getUploadInfo(userID string, urlMode bool, traceID string) (
 		return nil, &api.ErrWeb{Code: terrors.NodeOffline.Int(), Message: fmt.Sprintf("storage's nodes not found")}
 	}
 
+	// sort.Slice(cNodes, func(i, j int) bool {
+	// 	return cNodes[i].BandwidthDown > cNodes[j].BandwidthDown
+	// })
+
+	// TODO New rules Sort by remaining bandwidth
 	sort.Slice(cNodes, func(i, j int) bool {
-		return cNodes[i].BandwidthDown > cNodes[j].BandwidthDown
+		return cNodes[i].BandwidthFreeDown > cNodes[j].BandwidthFreeDown
 	})
 
 	// mixup nodes
@@ -745,7 +750,12 @@ func (s *Scheduler) getUploadInfo(userID string, urlMode bool, traceID string) (
 
 	for i := 0; i < len(cNodes); i++ {
 		cNode := cNodes[i]
-		if cNode.BandwidthDown < units.MiB && len(ret.List) > 2 {
+		// if cNode.BandwidthDown < units.MiB && len(ret.List) > 2 {
+		// 	break
+		// }
+
+		// TODO New rules Sort by remaining bandwidth
+		if cNode.BandwidthFreeDown < units.MiB && len(ret.List) > 2 {
 			break
 		}
 

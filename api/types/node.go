@@ -7,6 +7,7 @@ import (
 
 	"github.com/Filecoin-Titan/titan/node/modules/dtypes"
 	"github.com/Filecoin-Titan/titan/region"
+	"github.com/google/uuid"
 	"golang.org/x/time/rate"
 )
 
@@ -716,9 +717,10 @@ type AccessPointRsp struct {
 
 // KeepaliveRsp represents the response structure for keepalive requests.
 type KeepaliveRsp struct {
-	SessionID string
-	ErrCode   int
-	ErrMsg    string
+	SessionUUID uuid.UUID
+	SessionID   string
+	ErrCode     int
+	ErrMsg      string
 }
 
 // KeepaliveReq keepalive requests.

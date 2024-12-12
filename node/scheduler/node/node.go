@@ -78,6 +78,9 @@ type Node struct {
 	ResourcesStatistics *types.ResourcesStatistics
 
 	bandwidthTracker *BandwidthTracker
+
+	BandwidthFreeUp   int64
+	BandwidthFreeDown int64
 }
 
 // API represents the node API
@@ -430,4 +433,12 @@ func (n *Node) NetFlowDownExcess(size float64) bool {
 	}
 
 	return true
+}
+
+func (n *Node) SetBandwidths(free, peak types.FlowUnit) {
+	n.BandwidthDown = peak.D
+	n.BandwidthUp = peak.U
+
+	n.BandwidthFreeDown = free.D
+	n.BandwidthFreeUp = free.U
 }
