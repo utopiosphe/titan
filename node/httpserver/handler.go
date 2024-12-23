@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Filecoin-Titan/titan/lib/limiter"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/ipfs/interface-go-ipfs-core/path"
@@ -25,6 +24,9 @@ const (
 	reqUploadv3       = "/uploadv3" // upload with url
 	reqUploadv3Status = "/statusv3" // status of active or inactive uploadv3 request
 	reqUploadv4       = "/uploadv4" // multi-part upload
+
+	reqMonitor = "/monitor"
+	reqStats   = "/stats"
 
 	reqRpc                = "/rpc"
 	reqLease              = "/lease"
@@ -78,25 +80,31 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		!strings.Contains(r.URL.Path, reqUploadv2) &&
 		!strings.Contains(r.URL.Path, reqUploadv3) &&
 		!strings.Contains(r.URL.Path, reqUploadv3Status) &&
-		!strings.Contains(r.URL.Path, reqUploadv4) {
+		!strings.Contains(r.URL.Path, reqUploadv4) &&
+		!strings.Contains(r.URL.Path, reqMonitor) &&
+		!strings.Contains(r.URL.Path, reqStats) {
 		resetPath(r)
 	}
 
 	reqPath := getFirstPathSegment(r.URL.Path)
+	monitor := h.hs.monitor
+
+	if strings.Contains(r.URL.Path, reqStats) || strings.Contains(r.URL.Path, reqMonitor) {
+		monitor.ServeHTTP(w, r)
+		return
+	}
 
 	switch reqPath {
 	case reqIpfs:
-		h.hs.handler(w, r)
+		monitor.Middleware(h.hs.handler).ServeHTTP(w, r)
 	case reqUpload:
-		h.hs.uploadHandler(w, r)
+		monitor.Middleware(h.hs.uploadHandler).ServeHTTP(w, r)
 	case reqUploadv2:
-		h.hs.uploadv2Handler(w, r)
+		monitor.Middleware(h.hs.uploadv2Handler).ServeHTTP(w, r)
 	case reqUploadv3:
-		h.hs.uploadv3Handler(w, r)
+		monitor.Middleware(h.hs.uploadv3Handler).ServeHTTP(w, r)
 	case reqUploadv3Status:
 		h.hs.uploadv3StatusHandler(w, r)
-	case reqUploadv4:
-		h.hs.uploadv4Handler(w, r)
 	default:
 		h.handler.ServeHTTP(w, r)
 	}
@@ -119,8 +127,8 @@ func (hs *HttpServer) handler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodHead:
 		hs.headHandler(w, r)
 	case http.MethodGet:
-		limiter := limiter.NewWriter(w, hs.rateLimiter.BandwidthUpLimiter)
-		hs.getHandler(limiter, r)
+		// limiter := limiter.NewWriter(w, hs.rateLimiter.BandwidthUpLimiter)
+		hs.getHandler(w, r)
 	default:
 		http.Error(w, fmt.Sprintf("method %s not allowed", r.Method), http.StatusBadRequest)
 	}
