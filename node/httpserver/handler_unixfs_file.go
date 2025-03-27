@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	fscrypto "github.com/Filecoin-Titan/titan/node/httpserver/crypto"
-	"github.com/chai2010/webp"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-libipfs/files"
@@ -228,10 +227,10 @@ func getEncoder(ctype string) func(io.Writer, image.Image) error {
 		return func(w io.Writer, i image.Image) error {
 			return bmp.Encode(w, i)
 		}
-	case strings.Contains(ctype, "webp"):
-		return func(w io.Writer, i image.Image) error {
-			return webp.Encode(w, i, &webp.Options{Lossless: true, Quality: webp.DefaulQuality})
-		}
+	// case strings.Contains(ctype, "webp"):
+	// return func(w io.Writer, i image.Image) error {
+	// 	return webp.Encode(w, i, &webp.Options{Lossless: true, Quality: webp.DefaulQuality})
+	// }
 	default:
 		return func(w io.Writer, i image.Image) error {
 			return fmt.Errorf("unsupported image format: %s", ctype)

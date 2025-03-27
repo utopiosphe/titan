@@ -28,16 +28,6 @@ func fetchTlsConfigFromRemote(acmeAddress string) (cfg *tls.Config, domainSuffix
 		MinVersion: tls.VersionTLS12,
 		MaxVersion: tls.VersionTLS13,
 		NextProtos: []string{"h2", "h3"},
-		// InsecureSkipVerify: true,
-		// GetCertificate: func(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
-		// 	return nil, nil
-		// },
-		// VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-		// 	return nil
-		// },
-		// GetConfigForClient: func(chi *tls.ClientHelloInfo) (*tls.Config, error) {
-		// 	return nil, nil
-		// },
 	}
 
 	type Acme struct {
@@ -91,11 +81,6 @@ func fetchTlsConfigFromRemote(acmeAddress string) (cfg *tls.Config, domainSuffix
 			tlsConfig.Certificates = append(tlsConfig.Certificates, cert)
 		}
 	}
-
-	// if err := mergeLocalTlsConfig(tlsConfig); err != nil {
-	// 	log.Error("merge local tls config error", err)
-	// 	return nil, ""
-	// }
 
 	return tlsConfig, domainSuffix
 }
@@ -153,15 +138,6 @@ func (ticker *TickRefresher) attempt() {
 	tlsCfg = tlsConfig
 }
 
-// func mergeLocalTlsConfig(tlsConfig *tls.Config) error {
-// 	localCfg, err := defaultTLSConfig()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	tlsConfig.Certificates = append(tlsConfig.Certificates, localCfg.Certificates...)
-// 	return nil
-// }
-
 func defaultTLSConfig() (*tls.Config, error) {
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -192,7 +168,7 @@ func defaultTLSConfig() (*tls.Config, error) {
 }
 
 func flushConfig(lr repo.LockedRepo, tlsConfig *tls.Config, cfg *config.CandidateCfg) error {
-	// TODO flush cert/key pair to external to disk config
+
 	if tlsConfig == nil {
 		return nil
 	}

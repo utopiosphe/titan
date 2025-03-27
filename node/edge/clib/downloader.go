@@ -158,6 +158,16 @@ func (d *Downloader) cancelDownloadTask(filePath string) error {
 	for _, task := range d.taskList {
 		if task.req.DownloadPath == filePath {
 			task.cancelFunc()
+
+			_, err := os.Stat(filePath)
+			if err == nil {
+				return fmt.Errorf("file path: %s, already downloaded", filePath)
+			}
+
+			// for {
+			// 	<- task.cancelDone
+			// }
+
 			return nil
 		}
 	}

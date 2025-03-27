@@ -16,8 +16,8 @@ import (
 var monitorIndexHTML embed.FS
 
 const (
-	RequiredBandDown = 500 * 1 << 20 / 8 // 500rbps 62.5rB/s
-	RequiredBandUp   = 200 * 1 << 20 / 8 // 200rbps 25rB/s
+	RequiredBandDown = 500 * 1 << 20 / 8 // 500Mbps 62.5MB/s
+	RequiredBandUp   = 200 * 1 << 20 / 8 // 200Mbps 25MB/s
 
 	LowStress    = 0.2 // low stress of peak0. will degrade to peak1
 	Peak0LowTask = 1
@@ -51,7 +51,9 @@ type RouteLoads struct {
 	sync.RWMutex
 }
 
-// RouteInstance 应该包括 起止时间, writer和reader. 读取/写入字节数, 路由名称, 并且采样超过10分钟并且已经结束的请求应该被丢弃.
+// RouteInstance should include start and end times, writer and reader,
+// number of bytes read and written, and the route name.
+// Requests that lasted more than 10 minutes and have already ended should be discarded.
 type RouteInstance struct {
 	name string // route nare
 
@@ -357,88 +359,17 @@ func (m *Monitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
-// 获取L1有效带宽 例如: 上行 方法
-//
-
 /*
-负反馈:
-sdk遇到 上传/下载 失败时, 通过浏览器向调度器反馈失败信息, 降低节点权值, 根据具体情况L1报警. 错误包含:
-1. 网络错误, L1告警, 通知调度器.
-2. 客户端主动取消, 累计节点取消超过10rb字节, 进行 L1报警, 通知调度器.
-3. 4xx错误, 不处理
-4. 5xx错误, L1告警
+Negative Feedback:
+When the SDK encounters upload/download failures, it reports failure information to the scheduler via the browser, reducing the node's weight. L1 will raise an alert based on the specific situation. The errors include:
+1. Network error – L1 raises an alert and notifies the scheduler.
+2. Client actively cancels – if the accumulated cancelled data exceeds 10 MB (10 * 1024^3 bytes), L1 raises an alert and notifies the scheduler.
+3. 4xx errors – no action taken.
+4. 5xx errors – L1 raises an alert.
 
-
-正反馈:
-L1提供peak0(1分钟内), peak1(10分钟内), peak2(自从上次运行以来最大值)
-1. 调度器运行, 获取所有L1的peak值. (默认peak0, 当peak0的值小于最低要求的20%,并且当前的任务为空,则退化为peak1. 如果peak1小于最低要求的20%,并且10分钟内任务为空,则退化为peak2)
-2. 调度器每10分钟更新一次节点的peak信息
-3. 主动测量: 当负反馈里 1,2 情况发生, 可触发主动测量.
+Positive Feedback:
+L1 provides peak0 (within 1 minute), peak1 (within 10 minutes), and peak2 (maximum value since last run).
+1. The scheduler fetches peak values from all L1s (default is peak0; if peak0 is less than 20% of the minimum requirement and there are no current tasks, it falls back to peak1. If peak1 is also less than 20% and there have been no tasks for 10 minutes, it falls back to peak2).
+2. The scheduler updates node peak information every 10 minutes.
+3. Active Measurement: When cases 1 or 2 from the negative feedback occur, they can trigger an active measurement.
 */
-
-// js修改一下:
-// 1. 全部替换成英文
-// 2. 删除上传/下载的部分, 只保留统计
-// 3. 统计详细说明:
-//     peak0: 1分钟内的峰值
-//     peak1: 10分钟内的峰值
-//     peak2: 从上次运行以来的最大值
-//     peak: 经过退化算法得到的峰值
-//     free: 空闲带宽
-//     current: 当前负载
-//     taskRunningCount: 当前运行中的任务数量
-//     taskCount: 10分钟内任务总数
-// 4. 将前端文件编译到程序里, 确保通过服务直接访问前端页面和stats接口, 我的go代码如下所示:
-
-// type Handler struct {
-// 	handler http.Handler
-// 	hs      *HttpServer
-// }
-
-// type HttpServer struct {
-// 	asset               Asset
-// 	scheduler           api.Scheduler
-// 	privateKey          *rsa.PrivateKey
-// 	schedulerPublicKey  *rsa.PublicKey
-// 	validation          Validation
-// 	tokens              *sync.Map
-// 	apiSecret           *jwt.HMACSHA
-// 	maxSizeOfUploadFile int64
-// 	webRedirect         string
-// 	rateLimiter         *types.RateLimiter
-// 	v3Progress          *sync.Map
-// 	monitor             *Monitor
-// }
-
-// // ServeHTTP checks if the request path starts with the IPFS path prefix and delegates to the appropriate handler
-// func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-// 	if !strings.Contains(r.URL.Path, reqIpfs) &&
-// 		!strings.Contains(r.URL.Path, reqUpload) &&
-// 		!strings.Contains(r.URL.Path, reqRpc) &&
-// 		!strings.Contains(r.URL.Path, reqUploadv2) &&
-// 		!strings.Contains(r.URL.Path, reqUploadv3) &&
-// 		!strings.Contains(r.URL.Path, reqUploadv3Status) &&
-// 		!strings.Contains(r.URL.Path, reqUploadv4) &&
-// 		!strings.Contains(r.URL.Path, reqStats) {
-// 		resetPath(r)
-// 	}
-
-// 	reqPath := getFirstPathSegment(r.URL.Path)
-// 	monitor := h.hs.monitor
-// 	switch reqPath {
-// 	case reqIpfs:
-// 		monitor.Middleware(h.hs.handler).ServeHTTP(w, r)
-// 	case reqUpload:
-// 		monitor.Middleware(h.hs.uploadHandler).ServeHTTP(w, r)
-// 	case reqUploadv2:
-// 		monitor.Middleware(h.hs.uploadv2Handler).ServeHTTP(w, r)
-// 	case reqUploadv3:
-// 		monitor.Middleware(h.hs.uploadv3Handler).ServeHTTP(w, r)
-// 	case reqUploadv3Status:
-// 		h.hs.uploadv3StatusHandler(w, r)
-// 	case reqStats:
-// 		monitor.statsHandler(w, r)
-// 	default:
-// 		h.handler.ServeHTTP(w, r)
-// 	}
-// }
