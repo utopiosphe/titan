@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"math/rand"
-	"sort"
 	"time"
 
 	"github.com/Filecoin-Titan/titan/api"
@@ -89,7 +88,7 @@ func (m *Manager) CreateSyncAssetTask(hash string, req *types.CreateSyncAssetReq
 }
 
 // CreateAssetUploadTask create a new asset upload task
-func (m *Manager) CreateAssetUploadTask(hash string, req *types.CreateAssetReq) (*types.UploadInfo, error) {
+func (m *Manager) CreateAssetUploadTask(hash string, req *types.CreateAssetReq, cNodes []*node.Node) (*types.UploadInfo, error) {
 	// Waiting for state machine initialization
 	m.stateMachineWait.Wait()
 	log.Infof("asset event: %s, add asset ", req.AssetCID)
@@ -103,7 +102,7 @@ func (m *Manager) CreateAssetUploadTask(hash string, req *types.CreateAssetReq) 
 	expiration := time.Now().Add(time.Duration(day) * 24 * time.Hour)
 
 	replicaCount := req.ReplicaCount
-	if replicaCount <= 0 || replicaCount > 1000 {
+	if replicaCount < 0 || replicaCount > 1000 {
 		replicaCount = defaultReplicaCount
 	}
 
@@ -119,32 +118,6 @@ func (m *Manager) CreateAssetUploadTask(hash string, req *types.CreateAssetReq) 
 		return info, nil
 	}
 
-	var cNodes []*node.Node
-	if req.NodeID != "" {
-		node := m.nodeMgr.GetCandidateNode(req.NodeID)
-		if node == nil {
-			return nil, &api.ErrWeb{Code: terrors.NotFoundNode.Int(), Message: fmt.Sprintf("storage's node %s not found", req.NodeID)}
-		}
-
-		cNodes = append(cNodes, node)
-	} else {
-		_, nodes := m.nodeMgr.GetResourceCandidateNodes()
-
-		// mixup nodes
-		// rand.Shuffle(len(nodes), func(i, j int) { nodes[i], nodes[j] = nodes[j], nodes[i] })
-
-		for _, node := range nodes {
-			// if node.IsStorageNode && !m.validationMgr.IsValidator(node.NodeID) && len(cNodes) <= maxCandidateForSelect {
-			if node.IsStorageNode && !m.validationMgr.IsValidator(node.NodeID) {
-				cNodes = append(cNodes, node)
-			}
-		}
-	}
-
-	if len(cNodes) == 0 {
-		return nil, &api.ErrWeb{Code: terrors.NotFoundNode.Int(), Message: fmt.Sprintf("storage's nodes not found")}
-	}
-
 	payload := &types.AuthUserUploadDownloadAsset{
 		UserID:     req.UserID,
 		AssetCID:   req.AssetCID,
@@ -157,15 +130,6 @@ func (m *Manager) CreateAssetUploadTask(hash string, req *types.CreateAssetReq) 
 		List:          make([]*types.NodeUploadInfo, 0),
 		AlreadyExists: false,
 	}
-
-	// sort.Slice(cNodes, func(i, j int) bool {
-	// 	return cNodes[i].BandwidthDown > cNodes[j].BandwidthDown
-	// })
-
-	// TODO New rules Sort by remaining bandwidth
-	sort.Slice(cNodes, func(i, j int) bool {
-		return cNodes[i].BandwidthDownScore > cNodes[j].BandwidthDownScore
-	})
 
 	seedIDs := make([]string, 0)
 	for i := 0; i < len(cNodes); i++ {
@@ -192,12 +156,17 @@ func (m *Manager) CreateAssetUploadTask(hash string, req *types.CreateAssetReq) 
 		return nil, &api.ErrWeb{Code: terrors.NotFoundNode.Int(), Message: fmt.Sprintf("storage's nodes not found")}
 	}
 
+	candidateCount := m.candidateReplicaCount
+	if req.Test {
+		candidateCount = 1
+	}
+
 	record := &types.AssetRecord{
 		Hash:                  hash,
 		CID:                   req.AssetCID,
 		ServerID:              m.nodeMgr.ServerID,
 		NeedEdgeReplica:       replicaCount,
-		NeedCandidateReplicas: int64(m.candidateReplicaCount),
+		NeedCandidateReplicas: int64(candidateCount),
 		Expiration:            expiration,
 		NeedBandwidth:         bandwidth,
 		State:                 UploadInit.String(),
