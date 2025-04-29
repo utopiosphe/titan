@@ -102,8 +102,14 @@ func (m *Manager) CreateAssetUploadTask(hash string, req *types.CreateAssetReq, 
 	expiration := time.Now().Add(time.Duration(day) * 24 * time.Hour)
 
 	replicaCount := req.ReplicaCount
-	if replicaCount < 0 || replicaCount > 1000 {
+	if replicaCount <= 0 || replicaCount > 1000 {
 		replicaCount = defaultReplicaCount
+	}
+
+	candidateCount := m.candidateReplicaCount
+	if req.Test {
+		candidateCount = 1
+		replicaCount = 0
 	}
 
 	assetRecord, err := m.LoadAssetRecord(hash)
@@ -154,11 +160,6 @@ func (m *Manager) CreateAssetUploadTask(hash string, req *types.CreateAssetReq, 
 
 	if len(ret.List) == 0 {
 		return nil, &api.ErrWeb{Code: terrors.NotFoundNode.Int(), Message: fmt.Sprintf("storage's nodes not found")}
-	}
-
-	candidateCount := m.candidateReplicaCount
-	if req.Test {
-		candidateCount = 1
 	}
 
 	record := &types.AssetRecord{
