@@ -886,7 +886,7 @@ func (n *SQLDB) CleanData() {
 		log.Warnf("CleanData validationResultTable err:%s", err.Error())
 	}
 
-	query = fmt.Sprintf(`DELETE FROM %s WHERE created_time<DATE_SUB(NOW(), INTERVAL 10 DAY) `, profitDetailsTable)
+	query = fmt.Sprintf(`DELETE FROM %s WHERE created_time<DATE_SUB(NOW(), INTERVAL 150 DAY) `, profitDetailsTable)
 	_, err = n.db.Exec(query)
 	if err != nil {
 		log.Warnf("CleanData profitDetailsTable err:%s", err.Error())
