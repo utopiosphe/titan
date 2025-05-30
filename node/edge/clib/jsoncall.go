@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -204,22 +205,16 @@ func setLogFile(logPath string) {
 }
 
 func setLogRotate(logPath string) error {
-	// config := logging.GetConfig()
-	// config.Stderr = false
-	// config.Stdout = false
-	// config.File = logPath
-	// config.Format = logging.JSONOutput
-	// logging.SetupLogging(config)
-	// logging.SetAllLoggers(logging.LevelInfo)
-	// return nil
-
 	config := logging.GetConfig()
 	config.Stderr = false
 	config.Stdout = false
 	logging.SetupLogging(config)
 
+	logDir := filepath.Dir(logPath)
+	ext := filepath.Ext(logPath)
+	logbaseName := strings.TrimRight(filepath.Base(logPath), ext)
 	rotator, err := rotatelogs.New(
-		logPath+".%Y-%m-%d",
+		path.Join(logDir, logbaseName+".%Y-%m-%d"+ext),
 		rotatelogs.WithLinkName(logPath),
 		rotatelogs.WithRotationTime(24*time.Hour),
 		rotatelogs.WithMaxAge(7*24*time.Hour),
