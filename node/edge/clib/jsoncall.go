@@ -59,7 +59,7 @@ type StartDaemonReq struct {
 	RepoPath   string `json:"repoPath"`
 	LogPath    string `json:"logPath"`
 	LocatorURL string `json:"locatorURL"`
-	LogRorate  bool   `json:"logRotate"`
+	LogRotate  bool   `json:"logRotate"`
 }
 
 type ReadConfigReq struct {
@@ -204,6 +204,19 @@ func setLogFile(logPath string) {
 }
 
 func setLogRotate(logPath string) error {
+	// config := logging.GetConfig()
+	// config.Stderr = false
+	// config.Stdout = false
+	// config.File = logPath
+	// config.Format = logging.JSONOutput
+	// logging.SetupLogging(config)
+	// logging.SetAllLoggers(logging.LevelInfo)
+	// return nil
+
+	config := logging.GetConfig()
+	config.Stderr = false
+	config.Stdout = false
+	logging.SetupLogging(config)
 
 	rotator, err := rotatelogs.New(
 		logPath+".%Y-%m-%d",
@@ -219,11 +232,11 @@ func setLogRotate(logPath string) error {
 	encoderCfg.EncodeTime = zapcore.ISO8601TimeEncoder
 	encoderCfg.EncodeLevel = zapcore.CapitalLevelEncoder
 	encoder := zapcore.NewJSONEncoder(encoderCfg)
-
 	writer := zapcore.AddSync(rotator)
 	core := zapcore.NewCore(encoder, writer, zapcore.InfoLevel)
 
 	logging.SetPrimaryCore(core)
+	logging.SetAllLoggers(logging.LevelInfo)
 
 	// set log and natural day align
 	now := time.Now()
@@ -274,7 +287,7 @@ func (clib *CLib) startDaemon(jsonStr string) (int, error) {
 	types.RunningNodeType = types.NodeEdge
 
 	if len(req.LogPath) > 0 {
-		if req.LogRorate {
+		if req.LogRotate {
 			if err := setLogRotate(req.LogPath); err != nil {
 				return CodeDaemonLogSetError, fmt.Errorf("set log rotate failed %s", err.Error())
 			}
