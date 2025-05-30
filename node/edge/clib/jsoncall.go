@@ -214,7 +214,7 @@ func setLogRotate(logPath string) error {
 	ext := filepath.Ext(logPath)
 	logbaseName := strings.TrimRight(filepath.Base(logPath), ext)
 	rotator, err := rotatelogs.New(
-		path.Join(logDir, logbaseName+".%Y-%m-%d"+ext),
+		path.Join(logDir, logbaseName+"-%Y-%m-%d"+ext),
 		rotatelogs.WithLinkName(logPath),
 		rotatelogs.WithRotationTime(24*time.Hour),
 		rotatelogs.WithMaxAge(7*24*time.Hour),
