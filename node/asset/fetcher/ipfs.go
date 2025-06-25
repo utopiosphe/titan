@@ -10,22 +10,25 @@ import (
 	"time"
 
 	"github.com/Filecoin-Titan/titan/api/types"
+	"github.com/Filecoin-Titan/titan/lib/limiter"
 	"github.com/ipfs/boxo/path"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-libipfs/blocks"
 	logging "github.com/ipfs/go-log/v2"
 	httpapi "github.com/ipfs/kubo/client/rpc"
+	"golang.org/x/time/rate"
 )
 
 var log = logging.Logger("asset/fetcher")
 
 // IPFSClient
 type IPFSClient struct {
-	httpAPI *httpapi.HttpApi
+	httpAPI     *httpapi.HttpApi
+	rateLimiter *rate.Limiter
 }
 
 // NewIPFSClient creates a new IPFSClient with the given API URL, timeout, and retry count
-func NewIPFSClient(ipfsAPIURL string) *IPFSClient {
+func NewIPFSClient(ipfsAPIURL string, rateLimiter *rate.Limiter) *IPFSClient {
 	t := http.DefaultTransport.(*http.Transport).Clone()
 	t.MaxIdleConns = 10
 	t.IdleConnTimeout = 120 * time.Second
@@ -40,7 +43,7 @@ func NewIPFSClient(ipfsAPIURL string) *IPFSClient {
 		log.Panicf("new ipfs error:%s, url:%s", err.Error(), ipfsAPIURL)
 	}
 
-	return &IPFSClient{httpAPI: httpAPI}
+	return &IPFSClient{httpAPI: httpAPI, rateLimiter: rateLimiter}
 }
 
 // FetchBlocks retrieves blocks from IPFSClient using the provided context, CIDs, and download info
@@ -59,7 +62,7 @@ func (ipfs *IPFSClient) retrieveBlock(ctx context.Context, cidStr string) (block
 		return nil, err
 	}
 
-	data, err := io.ReadAll(reader)
+	data, err := io.ReadAll(limiter.NewReader(reader, ipfs.rateLimiter))
 	if err != nil {
 		return nil, err
 	}

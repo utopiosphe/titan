@@ -69,9 +69,9 @@ func newAssetPuller(opts *pullerOptions) (*assetPuller, error) {
 
 	var blockFetcher fetcher.BlockFetcher
 	if !isDownloadSourceEmpty(opts.dss) {
-		blockFetcher = fetcher.NewCandidateFetcher(opts.httpClient)
+		blockFetcher = fetcher.NewCandidateFetcher(opts.httpClient, opts.rateLimiter)
 	} else {
-		blockFetcher = fetcher.NewIPFSClient(opts.ipfsAPIURL)
+		blockFetcher = fetcher.NewIPFSClient(opts.ipfsAPIURL, opts.rateLimiter)
 	}
 	return &assetPuller{
 		root:        opts.root,

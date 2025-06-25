@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/Filecoin-Titan/titan/api/types"
+	"github.com/Filecoin-Titan/titan/lib/limiter"
+	"golang.org/x/time/rate"
 
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-libipfs/blocks"
@@ -19,12 +21,13 @@ import (
 
 // CandidateFetcher
 type CandidateFetcher struct {
-	httpClient *http.Client
+	httpClient  *http.Client
+	rateLimiter *rate.Limiter
 }
 
 // NewCandidateFetcher creates a new CandidateFetcher with the specified timeout and retry count
-func NewCandidateFetcher(httpClient *http.Client) *CandidateFetcher {
-	return &CandidateFetcher{httpClient: httpClient}
+func NewCandidateFetcher(httpClient *http.Client, rateLimiter *rate.Limiter) *CandidateFetcher {
+	return &CandidateFetcher{httpClient: httpClient, rateLimiter: rateLimiter}
 }
 
 // FetchBlocks fetches blocks for the given cids and candidate download info
@@ -68,7 +71,7 @@ func (c *CandidateFetcher) fetchSingleBlock(ctx context.Context, downloadSource 
 		return nil, fmt.Errorf("http status code: %d, error msg: %s", resp.StatusCode, string(data))
 	}
 
-	data, err := io.ReadAll(resp.Body)
+	data, err := io.ReadAll(limiter.NewReader(resp.Body, c.rateLimiter))
 	if err != nil {
 		return nil, fmt.Errorf("read body %s", err.Error())
 	}

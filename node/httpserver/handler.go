@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Filecoin-Titan/titan/lib/limiter"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/ipfs/interface-go-ipfs-core/path"
@@ -121,14 +122,17 @@ func (hs *HttpServer) handler(w http.ResponseWriter, r *http.Request) {
 
 	setAccessControlAllowForHeader(w)
 
+	// support download file from edge and candidate
+	// not suppport upload file to candidate
+	writer := limiter.NewWriter(w, hs.rateLimiter.BandwidthUpLimiter)
+
 	switch r.Method {
 	case http.MethodOptions:
 		return
 	case http.MethodHead:
-		hs.headHandler(w, r)
+		hs.headHandler(writer, r)
 	case http.MethodGet:
-		// limiter := limiter.NewWriter(w, hs.rateLimiter.BandwidthUpLimiter)
-		hs.getHandler(w, r)
+		hs.getHandler(writer, r)
 	default:
 		http.Error(w, fmt.Sprintf("method %s not allowed", r.Method), http.StatusBadRequest)
 	}
