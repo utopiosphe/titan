@@ -3,6 +3,7 @@ package nat
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -27,32 +28,63 @@ func detectRestrictedNAT(http3Client *http.Client, eURL string) (bool, error) {
 	return true, nil
 }
 
+func isPrivateIP(addr string) bool {
+	ipstr, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return false
+	}
+
+	ip := net.ParseIP(ipstr)
+	if ip == nil {
+		return false
+	}
+
+	if ip.To4() != nil {
+		ip = ip.To4()
+
+		switch {
+		case ip[0] == 10:
+			// 10.0.0.0 To 10.255.255.255
+			return true
+		case ip[0] == 172 && ip[1] >= 16 && ip[1] <= 31:
+			// 172.16.0.0 To 172.31.255.255
+			return true
+		case ip[0] == 192 && ip[1] == 168:
+			// 192.168.0.0 To 192.168.255.255
+			return true
+		}
+	}
+
+	return false
+}
+
 // determines the NAT type of an edge node
-func analyzeNodeNATType(ctx context.Context, eNode *node.Node, candidateNodes []*node.Node, http3Client *http.Client) (types.NatType, error) {
+func analyzeNodeNATType(ctx context.Context, bNode *node.Node, candidateNodes []*node.Node, http3Client *http.Client) (types.NatType, error) {
 	if candidateNodes == nil || len(candidateNodes) < miniCandidateCount {
 		return types.NatTypeUnknown, fmt.Errorf("a minimum of %d candidates is required for nat detect", miniCandidateCount)
 	}
 
 	candidate1 := candidateNodes[0]
-	externalAddr, err := eNode.API.ExternalServiceAddress(ctx, candidate1.RPCURL())
+	externalAddr, err := bNode.API.ExternalServiceAddress(ctx, candidate1.RPCURL())
 	if err != nil {
-		return types.NatTypeUnknown, fmt.Errorf("ExternalServiceAddress error %s", err.Error())
+		return types.NatTypeUnknown, fmt.Errorf("check candidate ExternalServiceAddress %s error %s", bNode.NodeID, err.Error())
 	}
 
-	if externalAddr != eNode.RemoteAddr {
+	if !isPrivateIP(externalAddr) && externalAddr != bNode.RemoteAddr {
+		log.Debugf("check candidate %s to edge %s != %s [%s] [%s]", candidate1.NodeID, externalAddr, bNode.RemoteAddr, bNode.NodeID, candidate1.RPCURL())
 		return types.NatTypeSymmetric, nil
 	}
 
-	eURL := fmt.Sprintf("https://%s/net", eNode.RemoteAddr)
+	bURL := fmt.Sprintf("https://%s/net", bNode.RemoteAddr)
 
 	candidate2 := candidateNodes[1]
-	ok, err := candidate2.API.CheckNetworkConnectable(ctx, "tcp", eURL)
+	ok, err := candidate2.API.CheckNetworkConnectable(ctx, "tcp", bURL)
 	if err != nil {
 		return types.NatTypeUnknown, err
 	}
 
 	if ok {
-		ok, err = candidate2.API.CheckNetworkConnectable(ctx, "udp", eURL)
+		ok, err = candidate2.API.CheckNetworkConnectable(ctx, "udp", bURL)
 		if err != nil {
 			return types.NatTypeUnknown, err
 		}
@@ -62,17 +94,17 @@ func analyzeNodeNATType(ctx context.Context, eNode *node.Node, candidateNodes []
 		}
 	}
 
-	log.Debugf("check candidate %s to edge %s tcp connectivity failed", candidate2.NodeID, eURL)
+	log.Debugf("check candidate %s to edge %s tcp connectivity failed [%s]", candidate2.NodeID, bURL, bNode.NodeID)
 
-	if ok, err := detectFullConeNAT(ctx, candidate2, eURL); err != nil {
+	if ok, err := detectFullConeNAT(ctx, candidate2, bURL); err != nil {
 		return types.NatTypeUnknown, err
 	} else if ok {
 		return types.NatTypeFullCone, nil
 	}
 
-	log.Debugf("check candidate %s to edge %s udp connectivity failed", candidate2.NodeID, eURL)
+	log.Debugf("check candidate %s to edge %s udp connectivity failed [%s]", candidate2.NodeID, bURL, bNode.NodeID)
 
-	if isBehindRestrictedNAT, err := detectRestrictedNAT(http3Client, eURL); err != nil {
+	if isBehindRestrictedNAT, err := detectRestrictedNAT(http3Client, bURL); err != nil {
 		return types.NatTypeUnknown, err
 	} else if isBehindRestrictedNAT {
 		return types.NatTypeRestricted, nil
@@ -82,13 +114,13 @@ func analyzeNodeNATType(ctx context.Context, eNode *node.Node, candidateNodes []
 }
 
 // determineNATType detect the NAT type of an edge node
-func determineNodeNATType(edgeNode *node.Node, candidateNodes []*node.Node, http3Client *http.Client) string {
+func determineNodeNATType(bNode *node.Node, candidateNodes []*node.Node, http3Client *http.Client) string {
 	ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Second)
 	defer cancel()
 
-	natType, err := analyzeNodeNATType(ctx, edgeNode, candidateNodes, http3Client)
+	natType, err := analyzeNodeNATType(ctx, bNode, candidateNodes, http3Client)
 	if err != nil {
-		log.Warnf("determineNATType, %s error: %s", edgeNode.NodeID, err.Error())
+		log.Warnf("determineNATType, %s error: %s", bNode.NodeID, err.Error())
 		natType = types.NatTypeUnknown
 	}
 	return natType.String()
