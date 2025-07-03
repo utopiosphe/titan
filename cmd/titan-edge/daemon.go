@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Filecoin-Titan/titan/api"
+	"github.com/Filecoin-Titan/titan/api/client"
 	"github.com/Filecoin-Titan/titan/api/terrors"
 	"github.com/Filecoin-Titan/titan/api/types"
 	"github.com/Filecoin-Titan/titan/metrics"
@@ -380,7 +381,12 @@ func (d *daemon) connect() (bool, error) {
 		return false, err
 	}
 
-	opts := &types.ConnectOptions{Token: token, GeoInfo: d.geoInfo}
+	_, port, err := net.SplitHostPort(d.edgeConfig.Network.ListenAddress)
+	if err != nil {
+		return false, xerrors.Errorf("split tcp server addr: %w", err)
+	}
+
+	opts := &types.ConnectOptions{Token: token, GeoInfo: d.geoInfo, ActualClientAddress: fmt.Sprintf("%s:%s", client.IP, port)}
 	if err := d.schedulerAPI.EdgeConnect(d.ctx, opts); err != nil {
 		return false, err
 	}
