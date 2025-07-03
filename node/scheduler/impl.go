@@ -294,7 +294,7 @@ func (s *Scheduler) loadNodeData(ctx *NodeConnectContext) (*types.NodeInfo, erro
 	ctx.nodeInfo.LastSeen = time.Now()
 	if dbInfo != nil {
 		// init node info
-		ctx.nodeInfo.PortMapping = dbInfo.PortMapping
+		// ctx.nodeInfo.PortMapping = dbInfo.PortMapping
 		ctx.nodeInfo.OnlineDuration = dbInfo.OnlineDuration
 		ctx.nodeInfo.OfflineDuration = dbInfo.OfflineDuration
 		ctx.nodeInfo.BandwidthDown = dbInfo.BandwidthDown

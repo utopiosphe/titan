@@ -105,7 +105,6 @@ type NodeInfo struct {
 	Memory         float64         `json:"memory" form:"memory" gorm:"column:memory;comment:;" db:"memory"`
 	CPUCores       int             `json:"cpu_cores" form:"cpuCores" gorm:"column:cpu_cores;comment:;" db:"cpu_cores"`
 	MacLocation    string          `json:"mac_location" form:"macLocation" gorm:"column:mac_location;comment:;" db:"mac_location"`
-	PortMapping    string          `db:"port_mapping"`
 	SchedulerID    dtypes.ServerID `db:"scheduler_sid"`
 	DeactivateTime int64           `db:"deactivate_time"`
 	CPUInfo        string          `json:"cpu_info" form:"cpuInfo" gorm:"column:cpu_info;comment:;" db:"cpu_info"`
@@ -116,6 +115,8 @@ type NodeInfo struct {
 
 	NodeDynamicInfo
 	NodeStatisticsInfo
+
+	PortMapping string `db:"port_mapping"`
 }
 
 // NodeMigrateInfo holds information about node migration.
@@ -564,10 +565,20 @@ type ConnectOptions struct {
 	TcpServerPort int
 	// private minio storage only, not public storage
 	IsPrivateMinioOnly bool
-	ExternalURL        string
 
 	GeoInfo             *region.GeoInfo
 	ResourcesStatistics *ResourcesStatistics
+
+	// ExternalURL is the custom public URL configured by the client for external access.
+	// Example: A client with IP 123.123.123.123 may advertise "https://client_001.tit.io:2345"
+	// to allow other peers to connect via this domain instead of its raw IP.
+	ExternalURL string
+
+	// ActualClientAddress is the client's real network address (IP:port),
+	// which may differ from the proxy's address if the client connects through a relay.
+	// Example: If the client's original IP is 123.123.123.123:2345 but connects via proxy 222.222.222.222,
+	// this field records "123.123.123.123:2345".
+	ActualClientAddress string
 }
 
 // GeneratedCarInfo holds information about a generated CAR (Content Addressable Resource).

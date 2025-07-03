@@ -595,10 +595,10 @@ func (s *Scheduler) RequestActivationCodes(ctx context.Context, nodeType types.N
 
 // UpdateNodePort sets the port for the specified node.
 func (s *Scheduler) UpdateNodePort(ctx context.Context, nodeID, port string) error {
-	node := s.NodeManager.GetNode(nodeID)
-	if node != nil {
-		node.PortMapping = port
-	}
+	// node := s.NodeManager.GetNode(nodeID)
+	// if node != nil {
+	// 	node.PortMapping = port
+	// }
 
 	return s.NodeManager.UpdatePortMapping(nodeID, port)
 }
@@ -697,7 +697,7 @@ func (s *Scheduler) lnNodeConnected(ctx context.Context, opts *types.ConnectOpti
 
 	if dbInfo != nil {
 		// init node info
-		nodeInfo.PortMapping = dbInfo.PortMapping
+		// nodeInfo.PortMapping = dbInfo.PortMapping
 		nodeInfo.OnlineDuration = dbInfo.OnlineDuration
 		nodeInfo.OfflineDuration = dbInfo.OfflineDuration
 		nodeInfo.BandwidthDown = dbInfo.BandwidthDown

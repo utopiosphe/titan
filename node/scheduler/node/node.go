@@ -40,8 +40,6 @@ type Node struct {
 
 	// node info
 	PublicKey          *rsa.PublicKey
-	TCPPort            int
-	ExternalURL        string
 	IsPrivateMinioOnly bool
 	IsStorageNode      bool
 
@@ -52,14 +50,19 @@ type Node struct {
 	LastValidateTime int64
 
 	types.NodeDynamicInfo
+
+	ExternalIP  string
+	RemoteAddr  string // ExternalIP:UDPPort
+	TCPPort     int
+	ExternalURL string
+	// PortMapping string
+
 	IsTestNode      bool
 	Type            types.NodeType
-	ExternalIP      string
 	CPUUsage        float64
 	MemoryUsage     float64
 	ClientType      types.NodeClientType
 	BackProjectTime int64
-	RemoteAddr      string
 	Level           int
 	IncomeIncr      float64 // Base points increase every half hour (30 minute)
 	// GeoInfo         *region.GeoInfo
@@ -71,7 +74,6 @@ type Node struct {
 	NetFlowDown    int64
 	DiskSpace      float64
 	WSServerID     string
-	PortMapping    string
 	DeactivateTime int64
 	ForceOffline   bool
 	// FirstTime      time.Time
@@ -171,7 +173,7 @@ func (n *Node) InitInfo(nodeInfo *types.NodeInfo) {
 	n.DiskSpace = nodeInfo.DiskSpace
 	n.WSServerID = nodeInfo.WSServerID
 	// n.FirstTime = nodeInfo.FirstTime
-	n.PortMapping = nodeInfo.PortMapping
+	// n.PortMapping = nodeInfo.PortMapping
 	n.DeactivateTime = nodeInfo.DeactivateTime
 	// n.Memory = nodeInfo.Memory
 	// n.CPUCores = nodeInfo.CPUCores
@@ -342,11 +344,11 @@ func transformURL(inputURL string) (string, error) {
 // DownloadAddr returns the download address of the node
 func (n *Node) DownloadAddr() string {
 	addr := n.RemoteAddr
-	if n.PortMapping != "" {
-		index := strings.Index(n.RemoteAddr, ":")
-		ip := n.RemoteAddr[:index+1]
-		addr = ip + n.PortMapping
-	}
+	// if n.PortMapping != "" {
+	// 	index := strings.Index(n.RemoteAddr, ":")
+	// 	ip := n.RemoteAddr[:index+1]
+	// 	addr = ip + n.PortMapping
+	// }
 
 	return addr
 }

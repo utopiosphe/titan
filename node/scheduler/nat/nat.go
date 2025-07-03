@@ -60,7 +60,7 @@ func isPrivateIP(addr string) bool {
 
 // determines the NAT type of an edge node
 func analyzeNodeNATType(ctx context.Context, bNode *node.Node, candidateNodes []*node.Node, http3Client *http.Client) (types.NatType, error) {
-	if candidateNodes == nil || len(candidateNodes) < miniCandidateCount {
+	if len(candidateNodes) < miniCandidateCount {
 		return types.NatTypeUnknown, fmt.Errorf("a minimum of %d candidates is required for nat detect", miniCandidateCount)
 	}
 
