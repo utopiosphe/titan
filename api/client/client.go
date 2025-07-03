@@ -3,9 +3,11 @@ package client
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 	"time"
@@ -17,10 +19,37 @@ import (
 	"github.com/filecoin-project/go-jsonrpc"
 
 	"github.com/Filecoin-Titan/titan/lib/rpcenc"
+
+	"github.com/LMF709268224/titan-endpoint-finder/pkg/endpoint"
 )
+
+var (
+	finder *endpoint.Client
+	IP     string
+)
+
+func init() {
+	useProxy := os.Getenv("TITAN_USE_PROXY")
+	if useProxy == "true" {
+
+		ms := map[string][]string{
+			"https://test.titannet.io:5000/rpc/v0": {"121.14.67.147:5002"},
+			"https://120.79.221.36:2345/rpc/v0":    {"121.14.67.147:5001"},
+		}
+
+		x := endpoint.NewClient(context.Background(), ms, "")
+		finder = &x
+		IP = x.GetMyIP()
+	}
+}
 
 // NewScheduler creates a new http jsonrpc client.
 func NewScheduler(ctx context.Context, addr string, requestHeader http.Header, opts ...jsonrpc.Option) (api.Scheduler, jsonrpc.ClientCloser, error) {
+	if finder != nil {
+		addr = (*finder).GetEndpoint(addr)
+		addr = fmt.Sprintf("https://%s/rpc/v0", addr)
+	}
+
 	pushURL, err := getPushURL(addr)
 	if err != nil {
 		return nil, nil, err
@@ -144,6 +173,11 @@ func NewCommonRPCV0(ctx context.Context, addr string, requestHeader http.Header,
 }
 
 func NewLocator(ctx context.Context, addr string, requestHeader http.Header, opts ...jsonrpc.Option) (api.Locator, jsonrpc.ClientCloser, error) {
+	if finder != nil {
+		addr = (*finder).GetEndpoint(addr)
+		addr = fmt.Sprintf("https://%s/rpc/v0", addr)
+	}
+
 	pushURL, err := getPushURL(addr)
 	if err != nil {
 		return nil, nil, err

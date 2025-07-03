@@ -473,10 +473,11 @@ var daemonStartCmd = &cli.Command{
 						// }
 
 						opts := &types.ConnectOptions{
-							ExternalURL:        candidateCfg.ExternalURL,
-							Token:              token,
-							TcpServerPort:      tcpServerPort,
-							IsPrivateMinioOnly: isPrivateMinioOnly(candidateCfg),
+							ExternalURL:         candidateCfg.ExternalURL,
+							Token:               token,
+							TcpServerPort:       tcpServerPort,
+							IsPrivateMinioOnly:  isPrivateMinioOnly(candidateCfg),
+							ActualClientAddress: fmt.Sprintf("%s:%d", client.IP, tcpServerPort),
 							// ResourcesStatistics: rs,
 						}
 
