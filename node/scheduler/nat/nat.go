@@ -60,10 +60,6 @@ func isPrivateIP(addr string) bool {
 
 // determines the NAT type of an edge node
 func analyzeNodeNATType(ctx context.Context, bNode *node.Node, candidateNodes []*node.Node, http3Client *http.Client) (types.NatType, error) {
-	if len(candidateNodes) < miniCandidateCount {
-		return types.NatTypeUnknown, fmt.Errorf("a minimum of %d candidates is required for nat detect", miniCandidateCount)
-	}
-
 	candidate1 := candidateNodes[0]
 	externalAddr, err := bNode.API.ExternalServiceAddress(ctx, candidate1.RPCURL())
 	if err != nil {
@@ -117,6 +113,10 @@ func analyzeNodeNATType(ctx context.Context, bNode *node.Node, candidateNodes []
 func determineNodeNATType(bNode *node.Node, candidateNodes []*node.Node, http3Client *http.Client) string {
 	ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Second)
 	defer cancel()
+
+	if len(candidateNodes) < miniCandidateCount {
+		return bNode.NATType
+	}
 
 	natType, err := analyzeNodeNATType(ctx, bNode, candidateNodes, http3Client)
 	if err != nil {
