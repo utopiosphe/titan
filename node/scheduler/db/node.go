@@ -828,7 +828,7 @@ func (n *SQLDB) LoadDeactivateNodes(time int64) ([]string, error) {
 
 // CleanData performs a cleanup of outdated records across various tables based on predefined intervals.
 func (n *SQLDB) CleanData() {
-	query := fmt.Sprintf(`DELETE FROM %s WHERE created_time<DATE_SUB(NOW(), INTERVAL 30 DAY) `, replicaEventTable)
+	query := fmt.Sprintf(`DELETE FROM %s WHERE created_time<DATE_SUB(NOW(), INTERVAL 15 DAY) `, replicaEventTable)
 	_, err := n.db.Exec(query)
 	if err != nil {
 		log.Warnf("CleanData replicaEventTable err:%s", err.Error())
@@ -880,7 +880,7 @@ func (n *SQLDB) cleanTableData(table string) {
 	for {
 		query := fmt.Sprintf(`
             DELETE FROM %s 
-            WHERE created_time < DATE_SUB(NOW(), INTERVAL 30 DAY) 
+            WHERE created_time < DATE_SUB(NOW(), INTERVAL 15 DAY) 
             LIMIT %d`,
 			table, batchSize)
 
@@ -908,7 +908,7 @@ func (n *SQLDB) cleanServiceEventTableData() {
 	for {
 		query := fmt.Sprintf(`
             DELETE FROM %s 
-            WHERE start_time < DATE_SUB(NOW(), INTERVAL 30 DAY) 
+            WHERE start_time < DATE_SUB(NOW(), INTERVAL 15 DAY) 
             LIMIT %d`,
 			serviceEventTable, batchSize)
 
@@ -941,7 +941,7 @@ func (n *SQLDB) cleanProfitDetailsData() {
 	for {
 		query := fmt.Sprintf(`
             DELETE FROM %s 
-            WHERE created_time < DATE_SUB(NOW(), INTERVAL 150 DAY) 
+            WHERE created_time < DATE_SUB(NOW(), INTERVAL 10 DAY) 
             LIMIT %d`,
 			profitDetailsTable, batchSize)
 
