@@ -880,7 +880,7 @@ func (n *SQLDB) cleanTableData(table string) {
 	for {
 		query := fmt.Sprintf(`
             DELETE FROM %s 
-            WHERE created_time < DATE_SUB(NOW(), INTERVAL 15 DAY) 
+            WHERE created_time < DATE_SUB(NOW(), INTERVAL 10 DAY) 
             LIMIT %d`,
 			table, batchSize)
 
@@ -908,7 +908,7 @@ func (n *SQLDB) cleanServiceEventTableData() {
 	for {
 		query := fmt.Sprintf(`
             DELETE FROM %s 
-            WHERE start_time < DATE_SUB(NOW(), INTERVAL 15 DAY) 
+            WHERE start_time < DATE_SUB(NOW(), INTERVAL 10 DAY) 
             LIMIT %d`,
 			serviceEventTable, batchSize)
 
@@ -941,7 +941,7 @@ func (n *SQLDB) cleanProfitDetailsData() {
 	for {
 		query := fmt.Sprintf(`
             DELETE FROM %s 
-            WHERE created_time < DATE_SUB(NOW(), INTERVAL 10 DAY) 
+            WHERE created_time < DATE_SUB(NOW(), INTERVAL 30 DAY) 
             LIMIT %d`,
 			profitDetailsTable, batchSize)
 

@@ -1037,9 +1037,8 @@ func (s *Scheduler) getSource(cNode *node.Node, cid string, titanRsa *titanrsa.R
 func (s *Scheduler) getDownloadInfos(cid string, needCandidate bool) (*types.AssetSourceDownloadInfoRsp, int64, int, error) {
 	hash, err := cidutil.CIDToHash(cid)
 	if err != nil {
-		return nil, 0, 0, xerrors.Errorf("GetAssetSourceDownloadInfo %s cid to hash err:%s", cid, err.Error())
+		return nil, 0, 0, xerrors.Errorf("CIDToHash %s err:%s", cid, err)
 	}
-
 	aInfo, err := s.db.LoadAssetRecord(hash)
 	if err != nil {
 		return nil, 0, 0, err
@@ -1054,82 +1053,159 @@ func (s *Scheduler) getDownloadInfos(cid string, needCandidate bool) (*types.Ass
 	if err != nil {
 		return out, 0, 0, err
 	}
-
-	count := len(replicas)
-	if count == 0 {
-		return out, 0, count, nil
+	replicaCount := len(replicas)
+	if replicaCount == 0 {
+		return out, 0, replicaCount, nil
 	}
 
-	type nodeBandwidthUp struct {
-		NodeID      string
-		BandwidthUp int64
-	}
-
-	list := []*nodeBandwidthUp{}
-	for _, rInfo := range replicas {
-		nodeID := rInfo.NodeID
-
-		cNode := s.NodeManager.GetNode(nodeID)
-		if cNode != nil {
-			list = append(list, &nodeBandwidthUp{NodeID: nodeID, BandwidthUp: cNode.BandwidthUp})
-		}
-	}
-
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].BandwidthUp > list[j].BandwidthUp
-	})
-
+	sources := make([]*types.SourceDownloadInfo, 0, 10)
+	nodeList := make([]*node.Node, 0, len(replicas))
 	titanRsa := titanrsa.New(crypto.SHA256, crypto.SHA256.New())
-	sources := make([]*types.SourceDownloadInfo, 0)
 
-	for i := 0; i < len(list); i++ {
-		rInfo := list[i]
-		nodeID := rInfo.NodeID
-		// candidate
-		cNode := s.NodeManager.GetCandidateNode(nodeID)
-		if cNode != nil {
-			source := s.getSource(cNode, cid, titanRsa)
-			if source != nil {
-				sources = append(sources, source)
-			}
-
+	for _, r := range replicas {
+		node := s.NodeManager.GetNode(r.NodeID)
+		if node == nil {
 			continue
 		}
 
-		// edge
 		if needCandidate {
-			continue
+			if node.Type != types.NodeCandidate {
+				continue
+			}
+		} else {
+			if node.NATType != types.NatTypeNo.String() &&
+				node.NATType != types.NatTypeFullCone.String() {
+				continue
+			}
 		}
 
-		if len(sources) > 10 {
-			continue
+		nodeList = append(nodeList, node)
+	}
+
+	if len(nodeList) > 0 {
+		sort.Slice(nodeList, func(i, j int) bool {
+			return nodeList[i].BandwidthUp > nodeList[j].BandwidthUp
+		})
+
+		limit := 10
+		if len(nodeList) < limit {
+			limit = len(nodeList)
 		}
 
-		eNode := s.NodeManager.GetEdgeNode(nodeID)
-		if eNode == nil {
-			continue
-		}
-
-		if eNode.NATType == types.NatTypeNo.String() || eNode.NATType == types.NatTypeFullCone.String() {
-			source := s.getSource(cNode, cid, titanRsa)
-			if source != nil {
+		for i := 0; i < limit; i++ {
+			node := nodeList[i]
+			if source := s.getSource(node, cid, titanRsa); source != nil {
 				sources = append(sources, source)
 			}
 		}
 	}
 
-	if len(sources) == 0 {
-		return out, 0, count, nil
+	if len(sources) > 1 {
+		rand.Shuffle(len(sources), func(i, j int) {
+			sources[i], sources[j] = sources[j], sources[i]
+		})
 	}
-
-	rand.Shuffle(len(sources), func(i, j int) {
-		sources[i], sources[j] = sources[j], sources[i]
-	})
 
 	out.SourceList = sources
-
-	return out, aInfo.TotalSize, count, nil
+	return out, aInfo.TotalSize, replicaCount, nil
 }
+
+// func (s *Scheduler) getDownloadInfos(cid string, needCandidate bool) (*types.AssetSourceDownloadInfoRsp, int64, int, error) {
+// 	hash, err := cidutil.CIDToHash(cid)
+// 	if err != nil {
+// 		return nil, 0, 0, xerrors.Errorf("GetAssetSourceDownloadInfo %s cid to hash err:%s", cid, err.Error())
+// 	}
+
+// 	aInfo, err := s.db.LoadAssetRecord(hash)
+// 	if err != nil {
+// 		return nil, 0, 0, err
+// 	}
+
+// 	out := &types.AssetSourceDownloadInfoRsp{}
+// 	if aInfo.Source == int64(types.AssetSourceAWS) {
+// 		out.AWSBucket = aInfo.Note
+// 	}
+
+// 	replicas, err := s.db.LoadReplicasByStatus(hash, []types.ReplicaStatus{types.ReplicaStatusSucceeded})
+// 	if err != nil {
+// 		return out, 0, 0, err
+// 	}
+
+// 	count := len(replicas)
+// 	if count == 0 {
+// 		return out, 0, count, nil
+// 	}
+
+// 	type nodeBandwidthUp struct {
+// 		NodeID      string
+// 		BandwidthUp int64
+// 	}
+
+// 	list := []*nodeBandwidthUp{}
+// 	for _, rInfo := range replicas {
+// 		nodeID := rInfo.NodeID
+
+// 		cNode := s.NodeManager.GetNode(nodeID)
+// 		if cNode != nil {
+// 			list = append(list, &nodeBandwidthUp{NodeID: nodeID, BandwidthUp: cNode.BandwidthUp})
+// 		}
+// 	}
+
+// 	sort.Slice(list, func(i, j int) bool {
+// 		return list[i].BandwidthUp > list[j].BandwidthUp
+// 	})
+
+// 	titanRsa := titanrsa.New(crypto.SHA256, crypto.SHA256.New())
+// 	sources := make([]*types.SourceDownloadInfo, 0)
+
+// 	for i := 0; i < len(list); i++ {
+// 		rInfo := list[i]
+// 		nodeID := rInfo.NodeID
+// 		// candidate
+// 		cNode := s.NodeManager.GetCandidateNode(nodeID)
+// 		if cNode != nil {
+// 			source := s.getSource(cNode, cid, titanRsa)
+// 			if source != nil {
+// 				sources = append(sources, source)
+// 			}
+
+// 			continue
+// 		}
+
+// 		// edge
+// 		if needCandidate {
+// 			continue
+// 		}
+
+// 		if len(sources) > 10 {
+// 			continue
+// 		}
+
+// 		eNode := s.NodeManager.GetEdgeNode(nodeID)
+// 		if eNode == nil {
+// 			continue
+// 		}
+
+// 		if eNode.NATType == types.NatTypeNo.String() || eNode.NATType == types.NatTypeFullCone.String() {
+// 			source := s.getSource(cNode, cid, titanRsa)
+// 			if source != nil {
+// 				sources = append(sources, source)
+// 			}
+// 		}
+// 	}
+
+// 	if len(sources) == 0 {
+// 		return out, 0, count, nil
+// 	}
+
+// 	rand.Shuffle(len(sources), func(i, j int) {
+// 		sources[i], sources[j] = sources[j], sources[i]
+// 	})
+
+// 	out.SourceList = sources
+
+// 	return out, aInfo.TotalSize, count, nil
+// }
 
 // GetAssetSourceDownloadInfo retrieves the download details for a specified asset.
 func (s *Scheduler) GetAssetSourceDownloadInfo(ctx context.Context, cid string) (*types.AssetSourceDownloadInfoRsp, error) {

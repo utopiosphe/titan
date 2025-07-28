@@ -63,18 +63,19 @@ func (m *Manager) startNodeKeepaliveTimer() {
 	<-time.After(10 * time.Minute)
 	m.nodesKeepalive(10, true)
 
-	ticker := time.NewTicker(1 * time.Minute)
+	minute := 5
+
+	ticker := time.NewTicker(time.Duration(minute) * time.Minute)
 	defer ticker.Stop()
 
 	saveCounter := 0
 	for range ticker.C {
-
 		saveCounter++
 		if saveCounter == 2 {
-			m.nodesKeepalive(1, true)
+			m.nodesKeepalive(minute, true)
 			saveCounter = 0
 		} else {
-			m.nodesKeepalive(1, false)
+			m.nodesKeepalive(minute, false)
 		}
 	}
 }

@@ -86,10 +86,10 @@ func (m *Manager) startTicker() {
 	for {
 		time.Sleep(detectInterval * time.Second)
 
-		if m.nodeManager.Candidates >= miniCandidateCount {
-			m.retryDetectCandidatesNatType(m.getCandidateList())
-			m.retryDetectEdgesNatType(m.getEdgeList())
-		}
+		// if m.nodeManager.Candidates >= miniCandidateCount {
+		m.retryDetectCandidatesNatType(m.getCandidateList())
+		m.retryDetectEdgesNatType(m.getEdgeList())
+		// }
 	}
 }
 
