@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Filecoin-Titan/titan/api"
+	logging "github.com/ipfs/go-log/v2"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 
@@ -24,23 +26,72 @@ import (
 )
 
 var (
+	log    = logging.Logger("client")
 	finder *endpoint.Client
 	IP     string
 )
 
 func init() {
-	useProxy := os.Getenv("TITAN_USE_PROXY")
-	if useProxy == "true" {
-
-		ms := map[string][]string{
-			"https://test.titannet.io:5000/rpc/v0": {"121.14.67.147:5002"},
-			"https://120.79.221.36:2345/rpc/v0":    {"121.14.67.147:5001"},
+	proxy := os.Getenv("TITAN_PROXY_URL")
+	if proxy != "" {
+		ms, err := loadProxyFromURL(proxy)
+		if err != nil {
+			log.Errorf("failed to load proxy config from %s: %v\n", proxy, err)
+			return
 		}
 
-		x := endpoint.NewClient(context.Background(), ms, "")
+		x, err := endpoint.NewClient(context.Background(), ms, "")
+		if err != nil {
+			log.Errorf("failed to create endpoint client: %v\n", err)
+			return
+		}
 		finder = &x
-		IP = x.GetMyIP()
+		IP = x.GetClientPublicIP()
+		log.Infof("proxy config loaded from %s, my ip is %s", proxy, IP)
 	}
+}
+
+func SetProxy(proxy string) {
+	if proxy != "" {
+		ms, err := loadProxyFromURL(proxy)
+		if err != nil {
+			log.Errorf("failed to load proxy config from %s: %v\n", proxy, err)
+			return
+		}
+
+		x, err := endpoint.NewClient(context.Background(), ms, "")
+		if err != nil {
+			log.Errorf("failed to create endpoint client: %v\n", err)
+			return
+		}
+		finder = &x
+		IP = x.GetClientPublicIP()
+		log.Infof("proxy config loaded from %s, my ip is %s", proxy, IP)
+	}
+}
+
+// loadProxyFromURL load proxy config from given proxy url
+func loadProxyFromURL(configURL string) (map[string][]string, error) {
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	resp, err := client.Get(configURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch config from %s: %w", configURL, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch config: HTTP %d", resp.StatusCode)
+	}
+
+	var config map[string][]string
+	if err := json.NewDecoder(resp.Body).Decode(&config); err != nil {
+		return nil, fmt.Errorf("failed to parse config JSON: %w", err)
+	}
+
+	return config, nil
 }
 
 // NewScheduler creates a new http jsonrpc client.
