@@ -393,7 +393,6 @@ var daemonStartCmd = &cli.Command{
 		}
 
 		// httpServer.Stats().
-
 		go startHTTP3Server(transport, handler, tlsCfg)
 
 		go func() {
@@ -473,12 +472,17 @@ var daemonStartCmd = &cli.Command{
 						// }
 
 						opts := &types.ConnectOptions{
-							ExternalURL:         candidateCfg.ExternalURL,
-							Token:               token,
-							TcpServerPort:       tcpServerPort,
-							IsPrivateMinioOnly:  isPrivateMinioOnly(candidateCfg),
-							ActualClientAddress: fmt.Sprintf("%s:%d", client.IP, tcpServerPort),
+							ExternalURL:        candidateCfg.ExternalURL,
+							Token:              token,
+							TcpServerPort:      tcpServerPort,
+							IsPrivateMinioOnly: isPrivateMinioOnly(candidateCfg),
+
 							// ResourcesStatistics: rs,
+						}
+
+						if client.IP != "" {
+							_, rpcPort, _ := net.SplitHostPort(candidateCfg.Network.ListenAddress)
+							opts.ActualClientAddress = fmt.Sprintf("%s:%s", client.IP, rpcPort)
 						}
 
 						err := schedulerAPI.CandidateConnect(ctx, opts)

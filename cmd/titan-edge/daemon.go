@@ -66,6 +66,14 @@ type daemon struct {
 func newDaemon(ctx context.Context, repoPath string, daemonSwitch *clib.DaemonSwitch) (*daemon, error) {
 	ctx, cancel := context.WithCancel(ctx)
 
+	// Only cancel context if function exits with error
+	isExitWithError := true
+	defer func() {
+		if isExitWithError {
+			cancel()
+		}
+	}()
+
 	// Register all metric views
 	if err := view.Register(
 		metrics.DefaultViews...,
@@ -198,6 +206,11 @@ func newDaemon(ctx context.Context, repoPath string, daemonSwitch *clib.DaemonSw
 		}),
 		node.Override(new(dtypes.InternalIP), func() (dtypes.InternalIP, error) {
 			schedulerAddr := strings.Split(schedulerURL, "/")
+
+			if client.IP != "" {
+				schedulerAddr[2] = fmt.Sprintf("%s:%s", client.IP, schedulerAddr[2])
+			}
+
 			conn, err := net.DialTimeout("tcp", schedulerAddr[2], connectTimeout)
 			if err != nil {
 				return "", err
@@ -239,6 +252,7 @@ func newDaemon(ctx context.Context, repoPath string, daemonSwitch *clib.DaemonSw
 	log.Info("New titan daemon")
 
 	isExistWithError = false
+	isExitWithError = false // Mark success, don't cancel context
 
 	d := &daemon{
 		ID:           nodeID,
@@ -386,7 +400,11 @@ func (d *daemon) connect() (bool, error) {
 		return false, xerrors.Errorf("split tcp server addr: %w", err)
 	}
 
-	opts := &types.ConnectOptions{Token: token, GeoInfo: d.geoInfo, ActualClientAddress: fmt.Sprintf("%s:%s", client.IP, port)}
+	opts := &types.ConnectOptions{Token: token, GeoInfo: d.geoInfo}
+	if client.IP != "" {
+		opts.ActualClientAddress = fmt.Sprintf("%s:%s", client.IP, port)
+	}
+
 	if err := d.schedulerAPI.EdgeConnect(d.ctx, opts); err != nil {
 		return false, err
 	}
